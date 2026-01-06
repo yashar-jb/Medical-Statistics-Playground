@@ -12,16 +12,6 @@ They’re designed for **live teaching**: move sliders, change numbers, and inst
 > All files are named `EBMPG#.html` (from 0 to 8).  
 > Open them directly in your browser. The title inside each file tells you what it does.
 
-### EBMPG0.html – (Index / Launcher) *(optional)*
-
-Use this as:
-
-- A **landing page** with links to EBMPG1–8, or  
-- A “coming soon” slot for an extra module.
-
-> ✏️ You can update this section once EBMPG0 has a concrete role.
-
----
 
 ### EBMPG1.html – Study Design & Evidence Explorer
 
