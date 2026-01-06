@@ -1,0 +1,630 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Medical Statistics Playground – EBMPG Selector</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    :root {
+      --bg: #020617;
+      --bg-alt: #020617;
+      --accent: #38bdf8;
+      --accent-soft: rgba(56, 189, 248, 0.16);
+      --accent-strong: #0ea5e9;
+      --accent-pink: #fb7185;
+      --accent-green: #22c55e;
+      --text: #e5e7eb;
+      --text-muted: #9ca3af;
+      --border-subtle: 1px solid rgba(148, 163, 184, 0.35);
+      --shadow-soft: 0 22px 60px rgba(15, 23, 42, 0.95);
+      --radius-lg: 1.5rem;
+      --font-sans: system-ui, -apple-system, BlinkMacSystemFont, "SF Pro Text",
+                   "Segoe UI", sans-serif;
+    }
+
+    * { box-sizing: border-box; }
+
+    html, body {
+      margin: 0;
+      padding: 0;
+      min-height: 100%;
+      background:
+        radial-gradient(circle at top left, #1f2937 0, #020617 45%, #000 100%);
+      color: var(--text);
+      font-family: var(--font-sans);
+    }
+
+    body {
+      min-height: 100vh;
+      display: flex;
+      align-items: stretch;
+      justify-content: center;
+      padding: 24px;
+    }
+
+    .shell {
+      max-width: 1200px;
+      width: 100%;
+      margin: auto;
+      border-radius: var(--radius-lg);
+      background:
+        radial-gradient(circle at top right,
+          rgba(56, 189, 248, 0.12) 0,
+          rgba(15, 23, 42, 0.96) 40%,
+          #020617 100%);
+      border: var(--border-subtle);
+      box-shadow: var(--shadow-soft);
+      padding: 22px 22px 24px;
+      position: relative;
+      overflow: hidden;
+      backdrop-filter: blur(16px);
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+    }
+
+    .shell::before {
+      content: "";
+      position: absolute;
+      inset: -200px;
+      background-image:
+        radial-gradient(circle at 0% -10%, rgba(56, 189, 248, 0.2), transparent 60%),
+        radial-gradient(circle at 110% 20%, rgba(248, 250, 252, 0.05), transparent 65%);
+      opacity: 0.7;
+      pointer-events: none;
+    }
+
+    .shell-inner {
+      position: relative;
+      z-index: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+    }
+
+    header {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 12px;
+    }
+
+    .title-block h1 {
+      margin: 0;
+      font-size: clamp(1.8rem, 2.5vw, 2.1rem);
+      letter-spacing: 0.03em;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .title-gradient {
+      background: linear-gradient(to right, #38bdf8, #a855f7, #f97316);
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+    }
+
+    .badge {
+      font-size: 0.8rem;
+      padding: 3px 10px;
+      border-radius: 999px;
+      border: 1px solid rgba(148, 163, 184, 0.45);
+      color: var(--text-muted);
+      backdrop-filter: blur(10px);
+      background: rgba(15, 23, 42, 0.8);
+    }
+
+    .subtitle {
+      margin-top: 4px;
+      font-size: 0.94rem;
+      color: var(--text-muted);
+      max-width: 720px;
+    }
+
+    .tagline {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 0.78rem;
+      text-transform: uppercase;
+      letter-spacing: 0.13em;
+      color: var(--accent);
+      padding: 6px 12px;
+      border-radius: 999px;
+      border: 1px solid rgba(56, 189, 248, 0.45);
+      background: rgba(15, 23, 42, 0.9);
+    }
+
+    .tagline-orb {
+      width: 8px;
+      height: 8px;
+      border-radius: 999px;
+      background: var(--accent);
+      box-shadow: 0 0 12px rgba(56, 189, 248, 0.9);
+    }
+
+    .layout {
+      display: grid;
+      grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr);
+      gap: 18px;
+    }
+
+    @media (max-width: 900px) {
+      body { padding: 12px; }
+      .shell {
+        padding: 18px 16px 22px;
+        border-radius: 1.1rem;
+      }
+      .layout {
+        grid-template-columns: minmax(0, 1fr);
+      }
+    }
+
+    .intro-card {
+      border-radius: 1.1rem;
+      border: 1px solid rgba(148, 163, 184, 0.55);
+      background: rgba(15, 23, 42, 0.96);
+      padding: 10px 12px 12px;
+      font-size: 0.85rem;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .intro-card h2 {
+      font-size: 0.92rem;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      color: var(--text-muted);
+      margin: 0 0 3px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .intro-chip {
+      font-size: 0.72rem;
+      padding: 2px 7px;
+      border-radius: 999px;
+      border: 1px solid rgba(148, 163, 184, 0.5);
+      color: var(--accent-strong);
+      background: rgba(15, 23, 42, 0.95);
+    }
+
+    .intro-list {
+      list-style: none;
+      padding-left: 0;
+      margin: 0;
+      display: grid;
+      gap: 4px;
+    }
+
+    .intro-list li::before {
+      content: "◆";
+      color: var(--accent-strong);
+      margin-right: 6px;
+      font-size: 0.58rem;
+    }
+
+    .small-note {
+      font-size: 0.76rem;
+      color: var(--text-muted);
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 12px;
+    }
+
+    @media (max-width: 640px) {
+      .grid {
+        grid-template-columns: minmax(0, 1fr);
+      }
+    }
+
+    .card-link {
+      position: relative;
+      border-radius: 1.1rem;
+      padding: 10px 11px 12px;
+      border: 1px solid rgba(148, 163, 184, 0.45);
+      background:
+        radial-gradient(circle at top left,
+          rgba(56, 189, 248, 0.2),
+          rgba(15, 23, 42, 0.95));
+      text-decoration: none;
+      color: inherit;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      overflow: hidden;
+      transition:
+        transform 0.13s ease-out,
+        box-shadow 0.13s ease-out,
+        border-color 0.13s ease-out,
+        background 0.13s ease-out;
+    }
+
+    .card-link::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background:
+        radial-gradient(circle at 0% -40%,
+          rgba(248, 250, 252, 0.04),
+          transparent 60%);
+      opacity: 0;
+      transition: opacity 0.15s ease-out;
+      pointer-events: none;
+    }
+
+    .card-link:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 18px 40px rgba(15, 23, 42, 0.95);
+      border-color: rgba(56, 189, 248, 0.9);
+      background:
+        radial-gradient(circle at top left,
+          rgba(56, 189, 248, 0.35),
+          rgba(15, 23, 42, 0.96));
+    }
+
+    .card-link:hover::before {
+      opacity: 1;
+    }
+
+    .card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .card-title {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .card-title-main {
+      font-size: 0.96rem;
+      font-weight: 600;
+      letter-spacing: 0.03em;
+    }
+
+    .level-pill {
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.14em;
+      color: var(--text-muted);
+    }
+
+    .mode-pill {
+      font-size: 0.73rem;
+      padding: 2px 7px;
+      border-radius: 999px;
+      border: 1px solid rgba(148, 163, 184, 0.6);
+      background: rgba(15, 23, 42, 0.96);
+      color: var(--accent-strong);
+      white-space: nowrap;
+    }
+
+    .card-desc {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+    }
+
+    .card-tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 5px;
+      margin-top: 2px;
+    }
+
+    .tag {
+      font-size: 0.72rem;
+      padding: 1px 6px;
+      border-radius: 999px;
+      border: 1px solid rgba(148, 163, 184, 0.45);
+      color: var(--text-muted);
+      background: rgba(15, 23, 42, 0.95);
+      white-space: nowrap;
+    }
+
+    .start-pill {
+      margin-top: 4px;
+      align-self: flex-start;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 0.78rem;
+      text-transform: uppercase;
+      letter-spacing: 0.14em;
+      padding: 4px 10px;
+      border-radius: 999px;
+      border: 1px solid rgba(148, 163, 184, 0.65);
+      background: rgba(15, 23, 42, 0.92);
+      color: var(--accent);
+    }
+
+    .start-pill-icon {
+      width: 7px;
+      height: 7px;
+      border-radius: 999px;
+      background: var(--accent);
+      box-shadow: 0 0 8px rgba(56, 189, 248, 0.9);
+    }
+
+    footer {
+      margin-top: 4px;
+      font-size: 0.74rem;
+      color: var(--text-muted);
+      display: flex;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+
+    .kbd {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 2px 6px;
+      border-radius: 5px;
+      border: 1px solid rgba(148, 163, 184, 0.7);
+      font-size: 0.7rem;
+      line-height: 1.1;
+      margin: 0 2px;
+      background: rgba(15, 23, 42, 0.98);
+      color: #e5e7eb;
+    }
+  </style>
+</head>
+<body>
+<div class="shell">
+  <div class="shell-inner">
+    <header>
+      <div class="title-block">
+        <h1>
+          <span class="title-gradient">Medical Statistics Playground</span>
+          <span class="badge">EBM Arcade · Levels 1–8</span>
+        </h1>
+        <div class="subtitle">
+          Pick a <strong>playground</strong> (level) to explore a specific concept in medical statistics
+          and evidence-based medicine. Each one is a self-contained HTML file: ideal for live demos,
+          teaching sessions, or just playing with ideas.
+        </div>
+      </div>
+      <div class="tagline">
+        <span class="tagline-orb"></span>
+        Select a level · Launch a lab
+      </div>
+    </header>
+
+    <div class="layout">
+      <div class="intro-card">
+        <h2>
+          How it works
+          <span class="intro-chip">No install · Offline · Pure HTML</span>
+        </h2>
+        <ul class="intro-list">
+          <li><strong>Click a card</strong> to open that playground (EBMPG#.html) in your browser.</li>
+          <li>Change sliders / numbers and watch **graphs & statistics update in real time**.</li>
+          <li>Use them as live demos while teaching EBM, or as an interactive study tool.</li>
+        </ul>
+        <div class="small-note">
+          Tip: On GitHub Pages, this <code>index.html</code> is your entry screen.  
+          For a talk, keep your slides + this page open, then alt-tab between them.
+        </div>
+      </div>
+
+      <div class="grid">
+        <!-- EBMPG1 -->
+        <a class="card-link" href="EBMPG1.html">
+          <div class="card-header">
+            <div class="card-title">
+              <div class="level-pill">Level 1 · EBMPG1</div>
+              <div class="card-title-main">Study Design & Evidence Explorer</div>
+            </div>
+            <div class="mode-pill">Pick your study type</div>
+          </div>
+          <div class="card-desc">
+            Compare RCTs, cohorts, case–control, and cross-sectional designs; explore how each
+            affects bias, validity, and appropriate effect measures.
+          </div>
+          <div class="card-tags">
+            <span class="tag">Hierarchy of evidence</span>
+            <span class="tag">Internal validity</span>
+            <span class="tag">Study design</span>
+          </div>
+          <div class="start-pill">
+            <span class="start-pill-icon"></span>
+            Start playground
+          </div>
+        </a>
+
+        <!-- EBMPG2 -->
+        <a class="card-link" href="EBMPG2.html">
+          <div class="card-header">
+            <div class="card-title">
+              <div class="level-pill">Level 2 · EBMPG2</div>
+              <div class="card-title-main">Effect Sizes & Risk Measures</div>
+            </div>
+            <div class="mode-pill">ARR · RR · OR · NNT</div>
+          </div>
+          <div class="card-desc">
+            Enter control/treatment risks and see risk difference, RR, OR, RRR, and NNT.
+            Show why absolute measures often matter more clinically than relative ones.
+          </div>
+          <div class="card-tags">
+            <span class="tag">Risk difference</span>
+            <span class="tag">Relative risk</span>
+            <span class="tag">NNT</span>
+          </div>
+          <div class="start-pill">
+            <span class="start-pill-icon"></span>
+            Start playground
+          </div>
+        </a>
+
+        <!-- EBMPG3 -->
+        <a class="card-link" href="EBMPG3.html">
+          <div class="card-header">
+            <div class="card-title">
+              <div class="level-pill">Level 3 · EBMPG3</div>
+              <div class="card-title-main">Diagnostic Test & Bayes</div>
+            </div>
+            <div class="mode-pill">2×2 · LR · Post-test</div>
+          </div>
+          <div class="card-desc">
+            Build a 2×2 table, see sensitivity/specificity/PPV/NPV, and apply Bayes with likelihood
+            ratios to update pre-test to post-test probability.
+          </div>
+          <div class="card-tags">
+            <span class="tag">Diagnostic reasoning</span>
+            <span class="tag">Likelihood ratios</span>
+            <span class="tag">Bayesian thinking</span>
+          </div>
+          <div class="start-pill">
+            <span class="start-pill-icon"></span>
+            Start playground
+          </div>
+        </a>
+
+        <!-- EBMPG4 -->
+        <a class="card-link" href="EBMPG4.html">
+          <div class="card-header">
+            <div class="card-title">
+              <div class="level-pill">Level 4 · EBMPG4</div>
+              <div class="card-title-main">P-values, CIs & Power</div>
+            </div>
+            <div class="mode-pill">Simulate mini-trials</div>
+          </div>
+          <div class="card-desc">
+            Simulate repeated trials to see p-values, confidence intervals, and empirical power
+            for different true effects, variances, and sample sizes.
+          </div>
+          <div class="card-tags">
+            <span class="tag">Inference</span>
+            <span class="tag">p-values</span>
+            <span class="tag">Confidence intervals</span>
+          </div>
+          <div class="start-pill">
+            <span class="start-pill-icon"></span>
+            Start playground
+          </div>
+        </a>
+
+        <!-- EBMPG5 -->
+        <a class="card-link" href="EBMPG5.html">
+          <div class="card-header">
+            <div class="card-title">
+              <div class="level-pill">Level 5 · EBMPG5</div>
+              <div class="card-title-main">Confounding, Bias & Adjustment</div>
+            </div>
+            <div class="mode-pill">Crude vs adjusted</div>
+          </div>
+          <div class="card-desc">
+            Explore how a confounder can distort the apparent effect of an exposure, and how
+            adjustment (e.g., stratification / regression) changes the estimate.
+          </div>
+          <div class="card-tags">
+            <span class="tag">Confounding</span>
+            <span class="tag">Selection bias</span>
+            <span class="tag">Causal thinking</span>
+          </div>
+          <div class="start-pill">
+            <span class="start-pill-icon"></span>
+            Start playground
+          </div>
+        </a>
+
+        <!-- EBMPG6 -->
+        <a class="card-link" href="EBMPG6.html">
+          <div class="card-header">
+            <div class="card-title">
+              <div class="level-pill">Level 6 · EBMPG6</div>
+              <div class="card-title-main">Meta-analysis & Heterogeneity</div>
+            </div>
+            <div class="mode-pill">Forest plot lab</div>
+          </div>
+          <div class="card-desc">
+            Combine multiple studies, compare fixed- vs random-effects models, and visualise
+            heterogeneity with Q, I², τ² and a live forest plot.
+          </div>
+          <div class="card-tags">
+            <span class="tag">Meta-analysis</span>
+            <span class="tag">Heterogeneity</span>
+            <span class="tag">Forest plot</span>
+          </div>
+          <div class="start-pill">
+            <span class="start-pill-icon"></span>
+            Start playground
+          </div>
+        </a>
+
+        <!-- EBMPG7 -->
+        <a class="card-link" href="EBMPG7.html">
+          <div class="card-header">
+            <div class="card-title">
+              <div class="level-pill">Level 7 · EBMPG7</div>
+              <div class="card-title-main">Risk of Bias & GRADE</div>
+            </div>
+            <div class="mode-pill">Traffic lights & certainty</div>
+          </div>
+          <div class="card-desc">
+            Set domain-level risk-of-bias judgments, see an overall “traffic light”, and then
+            translate that into GRADE certainty levels (High → Very low).
+          </div>
+          <div class="card-tags">
+            <span class="tag">RoB 2</span>
+            <span class="tag">GRADE</span>
+            <span class="tag">Certainty of evidence</span>
+          </div>
+          <div class="start-pill">
+            <span class="start-pill-icon"></span>
+            Start playground
+          </div>
+        </a>
+
+        <!-- EBMPG8 -->
+        <a class="card-link" href="EBMPG8.html">
+          <div class="card-header">
+            <div class="card-title">
+              <div class="level-pill">Level 8 · EBMPG8</div>
+              <div class="card-title-main">Survival & Correlation Playground</div>
+            </div>
+            <div class="mode-pill">KM · HR · r ≠ causation</div>
+          </div>
+          <div class="card-desc">
+            Simulate survival trials with Kaplan–Meier curves & hazard ratios, then switch to
+            a correlation sandbox to show why correlation alone doesn’t prove causation.
+          </div>
+          <div class="card-tags">
+            <span class="tag">Survival analysis</span>
+            <span class="tag">Hazard ratio</span>
+            <span class="tag">Correlation vs causation</span>
+          </div>
+          <div class="start-pill">
+            <span class="start-pill-icon"></span>
+            Start playground
+          </div>
+        </a>
+      </div>
+    </div>
+
+    <footer>
+      <div>
+        Hint: On GitHub Pages the URL will usually look like
+        <code>https://&lt;username&gt;.github.io/Medical-Statistics-Playground/</code>.
+      </div>
+      <div>
+        Keyboard tip: use <span class="kbd">Alt</span> + <span class="kbd">Tab</span> between your slides
+        and this arcade during a live session.
+      </div>
+    </footer>
+  </div>
+</div>
+</body>
+</html>
