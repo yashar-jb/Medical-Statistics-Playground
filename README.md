@@ -2,7 +2,7 @@
 
 A set of small, self-contained **Evidence-Based Medicine (EBM)** and **medical statistics** playgrounds.
 
-Each file `EBMPG0.html` … `EBMPG8.html` is a **single-page app** (HTML + CSS + JS in one file) that runs **entirely offline** in any modern browser.  
+Each file `EBMPG1.html` … `EBMPG8.html` is a **single-page app** (HTML + CSS + JS in one file) that runs **entirely offline** in any modern browser.  
 They’re designed for **live teaching**: move sliders, change numbers, and instantly show how the stats behave.
 
 ---
