@@ -9,7 +9,7 @@ They’re designed for **live teaching**: move sliders, change numbers, and inst
 
 ## 🚏 Overview of Playgrounds
 
-> All files are named `EBMPG#.html` (from 0 to 8).  
+> All files are named `EBMPG#.html` (from 1 to 8).  
 > Open them directly in your browser. The title inside each file tells you what it does.
 
 
