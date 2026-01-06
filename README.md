@@ -221,7 +221,8 @@ Two advanced topics combined:
 
    ```bash
    git clone https://github.com/<your-username>/Medical-Statistics-Playground.git
-   cd Medical-Statistics-Playground```
+   cd Medical-Statistics-Playground
+   
    
 2. **Open any playground:**
 
@@ -231,3 +232,8 @@ Two advanced topics combined:
 
 3. **You’re done.**
   - No dependencies, no build step, no server – just open in browser and play.
+
+***OR***
+**You can open GitHub Pages for this repo from here:**
+  - https://yashar-jb.github.io/Medical-Statistics-Playground/
+
