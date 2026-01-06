@@ -1,0 +1,1273 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Diagnostic Test & Bayes Playground</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    :root {
+      --bg: #0f172a;
+      --bg-elevated: #020617;
+      --card-bg: #020617;
+      --accent: #38bdf8;
+      --accent-soft: rgba(56, 189, 248, 0.15);
+      --accent-strong: #0ea5e9;
+      --text: #e5e7eb;
+      --text-muted: #9ca3af;
+      --danger: #f97373;
+      --warning: #fbbf24;
+      --success: #22c55e;
+      --radius-lg: 1.25rem;
+      --shadow-soft: 0 18px 45px rgba(15, 23, 42, 0.9);
+      --border-subtle: 1px solid rgba(148, 163, 184, 0.22);
+      --font-sans: system-ui, -apple-system, BlinkMacSystemFont, "SF Pro Text",
+                   "Segoe UI", sans-serif;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html, body {
+      margin: 0;
+      padding: 0;
+      background: radial-gradient(circle at top left, #1f2937 0, #020617 45%, #000 100%);
+      color: var(--text);
+      font-family: var(--font-sans);
+    }
+
+    body {
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: stretch;
+      padding: 24px;
+    }
+
+    .app-shell {
+      max-width: 1200px;
+      width: 100%;
+      margin: auto;
+      background: linear-gradient(145deg, rgba(15, 23, 42, 0.96), rgba(15, 23, 42, 0.92));
+      border-radius: 1.5rem;
+      box-shadow: var(--shadow-soft);
+      border: 1px solid rgba(148, 163, 184, 0.35);
+      padding: 24px 24px 28px;
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+      backdrop-filter: blur(12px);
+    }
+
+    @media (max-width: 900px) {
+      body {
+        padding: 12px;
+      }
+      .app-shell {
+        padding: 18px 14px 22px;
+        border-radius: 1.1rem;
+      }
+    }
+
+    header {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      gap: 12px;
+      align-items: flex-start;
+    }
+
+    .title-block h1 {
+      font-size: clamp(1.6rem, 2.1vw, 1.9rem);
+      margin: 0;
+      letter-spacing: 0.02em;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .title-pill {
+      font-size: 0.8rem;
+      padding: 2px 10px;
+      border-radius: 999px;
+      border: 1px solid rgba(148, 163, 184, 0.4);
+      color: var(--text-muted);
+    }
+
+    .subtitle {
+      font-size: 0.9rem;
+      color: var(--text-muted);
+      margin-top: 4px;
+      max-width: 720px;
+    }
+
+    .tagline {
+      font-size: 0.78rem;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      color: var(--accent);
+      background: rgba(56, 189, 248, 0.1);
+      border-radius: 999px;
+      padding: 4px 12px;
+      border: 1px solid rgba(56, 189, 248, 0.35);
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .tagline-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 999px;
+      background: var(--accent);
+      box-shadow: 0 0 10px rgba(56, 189, 248, 0.85);
+    }
+
+    main {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    h2 {
+      margin: 0 0 10px;
+      font-size: 1.08rem;
+      letter-spacing: 0.02em;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 6px;
+    }
+
+    h2 span.label {
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.14em;
+      color: var(--text-muted);
+    }
+
+    .card {
+      background: radial-gradient(circle at top right,
+          rgba(56, 189, 248, 0.06) 0,
+          rgba(15, 23, 42, 0.98) 40%,
+          #020617 100%);
+      border-radius: var(--radius-lg);
+      border: var(--border-subtle);
+      padding: 14px 16px 16px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .card::before {
+      content: "";
+      position: absolute;
+      inset: -120px;
+      background-image: radial-gradient(circle at 0 -40px,
+        rgba(56, 189, 248, 0.12),
+        transparent 60%);
+      opacity: 0.7;
+      pointer-events: none;
+    }
+
+    .card-inner {
+      position: relative;
+      z-index: 1;
+    }
+
+    .row-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1.3fr) minmax(0, 1.1fr);
+      gap: 16px;
+    }
+
+    @media (max-width: 1000px) {
+      .row-grid {
+        grid-template-columns: minmax(0, 1fr);
+      }
+    }
+
+    .hint {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      margin-bottom: 6px;
+    }
+
+    /* Diagnostic 2x2 table */
+
+    .grid-2col {
+      display: grid;
+      grid-template-columns: minmax(0, 1.1fr) minmax(0, 1.1fr);
+      gap: 12px;
+    }
+
+    @media (max-width: 700px) {
+      .grid-2col {
+        grid-template-columns: minmax(0, 1fr);
+      }
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.83rem;
+      border-radius: 0.9rem;
+      overflow: hidden;
+      border: 1px solid rgba(148, 163, 184, 0.45);
+      background: rgba(15, 23, 42, 0.98);
+    }
+
+    th, td {
+      border-bottom: 1px solid rgba(55, 65, 81, 0.85);
+      padding: 6px 8px;
+      text-align: center;
+    }
+
+    th {
+      background: rgba(15, 23, 42, 0.96);
+      font-weight: 500;
+    }
+
+    tr:last-child td {
+      border-bottom: none;
+    }
+
+    th.col-header {
+      font-size: 0.8rem;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      color: var(--text-muted);
+    }
+
+    td.row-header {
+      font-size: 0.78rem;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      color: var(--text-muted);
+      text-align: left;
+      background: rgba(15, 23, 42, 0.9);
+    }
+
+    input[type="number"] {
+      width: 100%;
+      padding: 4px 6px;
+      border-radius: 0.5rem;
+      border: 1px solid rgba(148, 163, 184, 0.6);
+      background: rgba(15, 23, 42, 0.98);
+      color: var(--text);
+      font-size: 0.83rem;
+      text-align: right;
+    }
+
+    input[type="number"]:focus {
+      outline: none;
+      border-color: rgba(56, 189, 248, 0.9);
+      box-shadow: 0 0 0 1px rgba(56, 189, 248, 0.4);
+    }
+
+    input[type="range"] {
+      width: 100%;
+    }
+
+    .slider-row {
+      display: grid;
+      grid-template-columns: minmax(0, 1.3fr) minmax(0, 0.7fr);
+      gap: 8px;
+      align-items: center;
+      font-size: 0.82rem;
+    }
+
+    @media (max-width: 700px) {
+      .slider-row {
+        grid-template-columns: minmax(0, 1fr);
+      }
+    }
+
+    .slider-label {
+      font-size: 0.78rem;
+      text-transform: uppercase;
+      letter-spacing: 0.14em;
+      color: var(--text-muted);
+      margin-bottom: 2px;
+    }
+
+    .slider-display {
+      font-family: "SF Mono", ui-monospace, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      font-size: 0.86rem;
+    }
+
+    .results-card {
+      border-radius: 1rem;
+      border: 1px solid rgba(148, 163, 184, 0.5);
+      background: rgba(15, 23, 42, 0.98);
+      padding: 8px 10px 10px;
+      font-size: 0.83rem;
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 6px 10px;
+    }
+
+    @media (max-width: 600px) {
+      .results-card {
+        grid-template-columns: minmax(0, 1fr);
+      }
+    }
+
+    .result-row {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .result-label {
+      font-size: 0.78rem;
+      text-transform: uppercase;
+      letter-spacing: 0.14em;
+      color: var(--text-muted);
+    }
+
+    .result-value {
+      font-family: "SF Mono", ui-monospace, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      font-size: 0.88rem;
+    }
+
+    .result-note {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+    }
+
+    .result-highlight {
+      color: var(--accent-strong);
+    }
+
+    .result-bad {
+      color: #fecaca;
+    }
+
+    .grid-visuals {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+      gap: 10px;
+      margin-top: 10px;
+    }
+
+    @media (max-width: 700px) {
+      .grid-visuals {
+        grid-template-columns: minmax(0, 1fr);
+      }
+    }
+
+    .visual-card {
+      border-radius: 0.9rem;
+      border: 1px solid rgba(148, 163, 184, 0.45);
+      background: rgba(15, 23, 42, 0.96);
+      padding: 8px 8px 9px;
+      font-size: 0.78rem;
+    }
+
+    .visual-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      gap: 8px;
+      margin-bottom: 4px;
+    }
+
+    .visual-title {
+      font-size: 0.82rem;
+      font-weight: 500;
+    }
+
+    .visual-sub {
+      font-size: 0.73rem;
+      color: var(--text-muted);
+    }
+
+    .grid-1000 {
+      display: grid;
+      grid-template-columns: repeat(40, 1fr);
+      gap: 1px;
+      margin-top: 4px;
+    }
+
+    .grid-cell {
+      width: 100%;
+      padding-bottom: 100%;
+      border-radius: 2px;
+      position: relative;
+      overflow: hidden;
+      border: 1px solid rgba(31, 41, 55, 0.8);
+      background: rgba(15, 23, 42, 0.95);
+    }
+
+    .grid-cell-inner {
+      position: absolute;
+      inset: 0;
+    }
+
+    .grid-cell.tp {
+      background: radial-gradient(circle at 30% 20%, rgba(22, 163, 74, 0.95), rgba(5, 46, 22, 0.98));
+      border-color: rgba(22, 163, 74, 0.9);
+    }
+
+    .grid-cell.tn {
+      background: radial-gradient(circle at 30% 20%, rgba(52, 211, 153, 0.8), rgba(6, 78, 59, 0.98));
+      border-color: rgba(52, 211, 153, 0.9);
+    }
+
+    .grid-cell.fp {
+      background: radial-gradient(circle at 30% 20%, rgba(250, 204, 21, 0.95), rgba(113, 63, 18, 0.98));
+      border-color: rgba(250, 204, 21, 0.9);
+    }
+
+    .grid-cell.fn {
+      background: radial-gradient(circle at 30% 20%, rgba(248, 113, 113, 0.95), rgba(127, 29, 29, 0.98));
+      border-color: rgba(248, 113, 113, 0.9);
+    }
+
+    .grid-cell.empty {
+      background: rgba(15, 23, 42, 0.95);
+      border-color: rgba(31, 41, 55, 0.8);
+    }
+
+    .grid-legend {
+      margin-top: 4px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      font-size: 0.72rem;
+      color: var(--text-muted);
+      align-items: center;
+    }
+
+    .legend-swatch {
+      width: 10px;
+      height: 10px;
+      border-radius: 2px;
+      border: 1px solid rgba(148, 163, 184, 0.6);
+    }
+
+    .legend-swatch.tp {
+      background: radial-gradient(circle at 30% 20%, rgba(22, 163, 74, 0.95), rgba(5, 46, 22, 0.98));
+      border-color: rgba(22, 163, 74, 0.9);
+    }
+
+    .legend-swatch.tn {
+      background: radial-gradient(circle at 30% 20%, rgba(52, 211, 153, 0.8), rgba(6, 78, 59, 0.98));
+      border-color: rgba(52, 211, 153, 0.9);
+    }
+
+    .legend-swatch.fp {
+      background: radial-gradient(circle at 30% 20%, rgba(250, 204, 21, 0.95), rgba(113, 63, 18, 0.98));
+      border-color: rgba(250, 204, 21, 0.9);
+    }
+
+    .legend-swatch.fn {
+      background: radial-gradient(circle at 30% 20%, rgba(248, 113, 113, 0.95), rgba(127, 29, 29, 0.98));
+      border-color: rgba(248, 113, 113, 0.9);
+    }
+
+    .pill-soft {
+      font-size: 0.72rem;
+      padding: 2px 7px;
+      border-radius: 999px;
+      border: 1px solid rgba(148, 163, 184, 0.55);
+      background: rgba(15, 23, 42, 0.95);
+      color: var(--text-muted);
+    }
+
+    .big-number {
+      font-size: 1.1rem;
+      font-family: "SF Mono", ui-monospace, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+    }
+
+    .big-number.good {
+      color: var(--accent-strong);
+    }
+
+    .big-number.bad {
+      color: #fecaca;
+    }
+
+    /* Fagan-like nomogram */
+
+    .fagan-wrapper {
+      margin-top: 10px;
+      border-radius: 0.9rem;
+      border: 1px solid rgba(148, 163, 184, 0.45);
+      background: rgba(15, 23, 42, 0.96);
+      padding: 8px 10px 10px;
+      font-size: 0.78rem;
+    }
+
+    .fagan-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      gap: 8px;
+      margin-bottom: 4px;
+    }
+
+    .fagan-title {
+      font-size: 0.82rem;
+      font-weight: 500;
+    }
+
+    .fagan-sub {
+      font-size: 0.72rem;
+      color: var(--text-muted);
+    }
+
+    /* ROC */
+
+    .roc-wrapper {
+      display: grid;
+      grid-template-columns: minmax(0, 1.1fr) minmax(0, 1.1fr);
+      gap: 12px;
+      align-items: stretch;
+    }
+
+    @media (max-width: 800px) {
+      .roc-wrapper {
+        grid-template-columns: minmax(0, 1fr);
+      }
+    }
+
+    .roc-panel {
+      border-radius: 0.9rem;
+      border: 1px solid rgba(148, 163, 184, 0.45);
+      background: rgba(15, 23, 42, 0.96);
+      padding: 8px 10px 10px;
+      font-size: 0.8rem;
+    }
+
+    .roc-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      gap: 8px;
+      margin-bottom: 4px;
+    }
+
+    .roc-title {
+      font-size: 0.82rem;
+      font-weight: 500;
+    }
+
+    .roc-sub {
+      font-size: 0.72rem;
+      color: var(--text-muted);
+    }
+
+    .roc-stats {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 6px 10px;
+      font-size: 0.8rem;
+    }
+
+    @media (max-width: 600px) {
+      .roc-stats {
+        grid-template-columns: minmax(0, 1fr);
+      }
+    }
+
+    footer {
+      margin-top: 8px;
+      font-size: 0.72rem;
+      color: var(--text-muted);
+      display: flex;
+      justify-content: space-between;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+  </style>
+</head>
+<body>
+<div class="app-shell">
+  <header>
+    <div class="title-block">
+      <h1>
+        Diagnostic Test &amp; Bayes Playground
+        <span class="title-pill">Sensitivity · Specificity · PPV · NPV · Bayes</span>
+      </h1>
+      <div class="subtitle">
+        Explore how sensitivity, specificity and prevalence interact, see PPV/NPV, and visualize
+        pre-test &amp; post-test probabilities and ROC thresholds. All calculations run locally
+        in your browser.
+      </div>
+    </div>
+    <div class="tagline">
+      <span class="tagline-dot"></span>
+      Live EBM teaching aid
+    </div>
+  </header>
+
+  <main>
+    <!-- Row 1: Diagnostic 2x2 + Pre/Post Bayes -->
+    <div class="row-grid">
+      <!-- Diagnostic 2x2 Test Calculator -->
+      <section class="card">
+        <div class="card-inner">
+          <h2>
+            Diagnostic 2×2 Test Calculator
+            <span class="label">Sensitivity · Specificity · Prevalence</span>
+          </h2>
+          <div class="hint">
+            Choose sensitivity, specificity, prevalence and a hypothetical sample size.
+            The calculator shows the 2×2 table, PPV/NPV, and a 1,000-person icon grid of TP/FP/TN/FN.
+          </div>
+
+          <div class="grid-2col">
+            <div>
+              <div class="slider-row" style="margin-bottom:6px;">
+                <div>
+                  <div class="slider-label">Sensitivity</div>
+                  <input type="range" id="sensSlider" min="40" max="100" value="90" />
+                </div>
+                <div class="slider-display" id="sensDisplay"></div>
+              </div>
+              <div class="slider-row" style="margin-bottom:6px;">
+                <div>
+                  <div class="slider-label">Specificity</div>
+                  <input type="range" id="specSlider" min="40" max="100" value="90" />
+                </div>
+                <div class="slider-display" id="specDisplay"></div>
+              </div>
+              <div class="slider-row" style="margin-bottom:6px;">
+                <div>
+                  <div class="slider-label">Prevalence</div>
+                  <input type="range" id="prevSlider" min="1" max="50" value="10" />
+                </div>
+                <div class="slider-display" id="prevDisplay"></div>
+              </div>
+              <div class="slider-row">
+                <div>
+                  <div class="slider-label">Sample size</div>
+                  <input type="number" id="sampleSizeInput" min="10" step="10" value="1000" />
+                </div>
+                <div class="slider-display" id="sampleSizeDisplay"></div>
+              </div>
+            </div>
+
+            <div class="results-card" id="diagStatsPanel">
+              <!-- filled by JS -->
+            </div>
+          </div>
+
+          <div class="visual-card" style="margin-top:10px;">
+            <div class="visual-header">
+              <div class="visual-title">1,000-person view of the test</div>
+              <div class="visual-sub">Scaled to a cohort of 1,000 with the same parameters.</div>
+            </div>
+            <div class="grid-1000" id="diagGrid"></div>
+            <div class="grid-legend">
+              <span class="pill-soft">Each square = 1 person in a 1,000-person population</span>
+              <span><span class="legend-swatch tp"></span> True positive</span>
+              <span><span class="legend-swatch fn"></span> False negative</span>
+              <span><span class="legend-swatch tn"></span> True negative</span>
+              <span><span class="legend-swatch fp"></span> False positive</span>
+            </div>
+            <div class="hint" style="margin-top:6px;">
+              Talking point: show how PPV collapses at low prevalence even if sensitivity
+              and specificity are high.
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Pre-test → Post-test Probability Explorer -->
+      <section class="card">
+        <div class="card-inner">
+          <h2>
+            Pre-test → Post-test Probability Explorer
+            <span class="label">Likelihood ratios · Fagan-style view</span>
+          </h2>
+          <div class="hint">
+            Set a pre-test probability and the likelihood ratios of the test.
+            See the post-test probabilities and a Fagan-like graphical approximation.
+          </div>
+
+          <div class="slider-row" style="margin-top:4px;">
+            <div>
+              <div class="slider-label">Pre-test probability</div>
+              <input type="range" id="pretestSlider" min="1" max="80" value="20" />
+            </div>
+            <div class="slider-display" id="pretestDisplay"></div>
+          </div>
+
+          <div class="slider-row" style="margin-top:8px;">
+            <div>
+              <div class="slider-label">Likelihood ratio + (LR+)</div>
+              <input type="range" id="lrPlusSlider" min="10" max="200" value="60" />
+            </div>
+            <div class="slider-display" id="lrPlusDisplay"></div>
+          </div>
+
+          <div class="slider-row" style="margin-top:8px;">
+            <div>
+              <div class="slider-label">Likelihood ratio − (LR−)</div>
+              <input type="range" id="lrMinusSlider" min="5" max="99" value="30" />
+            </div>
+            <div class="slider-display" id="lrMinusDisplay"></div>
+          </div>
+
+          <div class="grid-2col" style="margin-top:10px;">
+            <div class="results-card" id="bayesStatsPanel">
+              <!-- filled by JS -->
+            </div>
+            <div class="fagan-wrapper">
+              <div class="fagan-header">
+                <div class="fagan-title">Fagan-style nomogram (schematic)</div>
+                <div class="fagan-sub">
+                  Solid line: positive test · Dashed line: negative test
+                </div>
+              </div>
+              <svg id="faganSvg" viewBox="0 0 260 160" style="width:100%; height:auto;">
+                <!-- axes -->
+                <line x1="40" y1="20" x2="40" y2="140" stroke="#4b5563" stroke-width="1"/>
+                <line x1="130" y1="20" x2="130" y2="140" stroke="#4b5563" stroke-width="1"/>
+                <line x1="220" y1="20" x2="220" y2="140" stroke="#4b5563" stroke-width="1"/>
+
+                <!-- labels -->
+                <text x="40" y="16" fill="#9ca3af" font-size="9" text-anchor="middle">Pre</text>
+                <text x="130" y="16" fill="#9ca3af" font-size="9" text-anchor="middle">LR</text>
+                <text x="220" y="16" fill="#9ca3af" font-size="9" text-anchor="middle">Post</text>
+
+                <!-- probability ticks (0.01, 0.1, 0.5, 0.9) -->
+                <g fill="#6b7280" font-size="7">
+                  <text x="26" y="138" text-anchor="end">0.01</text>
+                  <text x="26" y="110" text-anchor="end">0.10</text>
+                  <text x="26" y="80" text-anchor="end">0.50</text>
+                  <text x="26" y="32" text-anchor="end">0.90</text>
+                </g>
+
+                <!-- positive line -->
+                <line id="faganLinePos" x1="40" y1="80" x2="220" y2="80"
+                      stroke="#38bdf8" stroke-width="2"/>
+                <!-- negative line -->
+                <line id="faganLineNeg" x1="40" y1="80" x2="220" y2="80"
+                      stroke="#f97373" stroke-width="1.5"
+                      stroke-dasharray="4 3"/>
+
+                <!-- points -->
+                <circle id="faganPre" cx="40" cy="80" r="3.5" fill="#e5e7eb"/>
+                <circle id="faganPostPos" cx="220" cy="80" r="3.5" fill="#38bdf8"/>
+                <circle id="faganPostNeg" cx="220" cy="80" r="3.5" fill="#f97373"/>
+              </svg>
+              <div class="hint" style="margin-top:4px;">
+                Teaching trick: ask “Is this test better at ruling in or ruling out?”
+                Then adjust LR+ and LR− live.
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <!-- Row 2: ROC & Threshold Tool -->
+    <section class="card">
+      <div class="card-inner">
+        <h2>
+          ROC &amp; Threshold Tool (Simulated biomarker)
+          <span class="label">Sensitivity–specificity trade-off</span>
+        </h2>
+        <div class="hint">
+          Adjust the decision threshold for a simulated continuous test.
+          A point moves along a pre-defined ROC curve, showing how sensitivity and specificity trade off.
+          This is conceptual (not tied to real patient data) but matches the typical ROC shape.
+        </div>
+
+        <div class="slider-row" style="margin-top:6px; max-width:520px;">
+          <div>
+            <div class="slider-label">Decision threshold (relative scale)</div>
+            <input type="range" id="thresholdSlider" min="0" max="100" value="40" />
+          </div>
+          <div class="slider-display" id="thresholdDisplay"></div>
+        </div>
+
+        <div class="roc-wrapper" style="margin-top:10px;">
+          <div class="roc-panel">
+            <div class="roc-header">
+              <div class="roc-title">ROC curve</div>
+              <div class="roc-sub">TPR (sensitivity) vs FPR (1 − specificity)</div>
+            </div>
+            <svg id="rocSvg" viewBox="0 0 180 180" style="width:100%; height:auto;">
+              <!-- axes box -->
+              <rect x="30" y="10" width="130" height="130" fill="none" stroke="#4b5563" stroke-width="1"/>
+              <!-- diagonal -->
+              <line x1="30" y1="140" x2="160" y2="10" stroke="#4b5563" stroke-width="0.8" stroke-dasharray="4 3"/>
+              <!-- labels -->
+              <text x="95" y="170" fill="#9ca3af" font-size="9" text-anchor="middle">
+                False positive rate (1 − specificity)
+              </text>
+              <text x="12" y="80" fill="#9ca3af" font-size="9" text-anchor="middle" transform="rotate(-90 12 80)">
+                True positive rate (sensitivity)
+              </text>
+              <!-- ticks -->
+              <g fill="#6b7280" font-size="7">
+                <text x="30" y="152">0.0</text>
+                <text x="95" y="152" text-anchor="middle">0.5</text>
+                <text x="160" y="152" text-anchor="end">1.0</text>
+
+                <text x="22" y="140" text-anchor="end">0.0</text>
+                <text x="22" y="75" text-anchor="end">0.5</text>
+                <text x="22" y="15" text-anchor="end">1.0</text>
+              </g>
+
+              <!-- ROC curve path -->
+              <path id="rocCurve" d="" fill="none" stroke="#38bdf8" stroke-width="2"/>
+
+              <!-- current threshold point -->
+              <circle id="rocPoint" cx="30" cy="140" r="3.5" fill="#fbbf24" stroke="#f59e0b" stroke-width="1.2"/>
+            </svg>
+          </div>
+          <div class="roc-panel">
+            <div class="roc-header">
+              <div class="roc-title">Current threshold summary</div>
+              <div class="roc-sub">Same simulated test, different operating points.</div>
+            </div>
+            <div class="roc-stats" id="rocStatsPanel">
+              <!-- filled by JS -->
+            </div>
+            <div class="hint" style="margin-top:6px;">
+              Use the slider to illustrate why there is no “perfect” threshold:
+              as you gain sensitivity you usually lose specificity, and vice versa.
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <div>
+      Demo idea: let your audience choose parameters for “their” test and ask them to predict PPV/NPV before revealing the numbers.
+    </div>
+    <div>
+      Save this file and open it offline for your talk · all logic is client-side.
+    </div>
+  </footer>
+</div>
+
+<script>
+  // ---------- Utility functions ----------
+
+  function safeNumber(value) {
+    const n = Number(value);
+    return Number.isFinite(n) ? n : 0;
+  }
+
+  function formatPercent(p) {
+    if (!Number.isFinite(p)) return "—";
+    return (p * 100).toFixed(1) + "%";
+  }
+
+  function formatRatio(x, digits = 2) {
+    if (!Number.isFinite(x)) return "—";
+    return x.toFixed(digits);
+  }
+
+  function formatProbability(p) {
+    if (!Number.isFinite(p)) return "—";
+    return (p * 100).toFixed(1) + "%";
+  }
+
+  // ---------- Diagnostic 2x2 calculator ----------
+
+  function computeDiagCounts(N, sensFrac, specFrac, prevFrac) {
+    if (!Number.isFinite(N) || N <= 0) N = 0;
+    if (prevFrac < 0) prevFrac = 0;
+    if (prevFrac > 1) prevFrac = 1;
+    if (sensFrac < 0) sensFrac = 0;
+    if (sensFrac > 1) sensFrac = 1;
+    if (specFrac < 0) specFrac = 0;
+    if (specFrac > 1) specFrac = 1;
+
+    const diseased = Math.round(prevFrac * N);
+    const nonDiseased = Math.max(0, N - diseased);
+
+    const tp = Math.round(sensFrac * diseased);
+    const fn = diseased - tp;
+
+    const tn = Math.round(specFrac * nonDiseased);
+    const fp = nonDiseased - tn;
+
+    return { tp, fn, tn, fp, diseased, nonDiseased, N };
+  }
+
+  function renderDiagGrid(counts) {
+    const grid = document.getElementById("diagGrid");
+    if (!grid) return;
+
+    grid.innerHTML = "";
+    const N = 1000; // fixed grid size
+
+    // recompute counts for N=1000 with same parameters proportionally
+    const prevFrac = counts.diseased / Math.max(counts.N, 1);
+    const sensFrac = counts.tp / Math.max(counts.diseased || 1, 1);
+    const specFrac = counts.tn / Math.max(counts.nonDiseased || 1, 1);
+
+    const scaled = computeDiagCounts(N, sensFrac, specFrac, prevFrac);
+    const total = scaled.tp + scaled.fn + scaled.tn + scaled.fp;
+
+    // fill cells: TP, FN, TN, FP, then empty if needed
+    let remaining = {
+      tp: scaled.tp,
+      fn: scaled.fn,
+      tn: scaled.tn,
+      fp: scaled.fp
+    };
+
+    function nextClass() {
+      if (remaining.tp > 0) { remaining.tp--; return "tp"; }
+      if (remaining.fn > 0) { remaining.fn--; return "fn"; }
+      if (remaining.tn > 0) { remaining.tn--; return "tn"; }
+      if (remaining.fp > 0) { remaining.fp--; return "fp"; }
+      return "empty";
+    }
+
+    for (let i = 0; i < N; i++) {
+      const cell = document.createElement("div");
+      const cls = nextClass();
+      cell.className = "grid-cell " + cls;
+      const inner = document.createElement("div");
+      inner.className = "grid-cell-inner";
+      cell.appendChild(inner);
+      grid.appendChild(cell);
+    }
+  }
+
+  function updateDiagnostic() {
+    const sensSlider = document.getElementById("sensSlider");
+    const specSlider = document.getElementById("specSlider");
+    const prevSlider = document.getElementById("prevSlider");
+    const sampleInput = document.getElementById("sampleSizeInput");
+
+    const sens = safeNumber(sensSlider.value);
+    const spec = safeNumber(specSlider.value);
+    const prev = safeNumber(prevSlider.value);
+    const N = safeNumber(sampleInput.value);
+
+    const sensFrac = sens / 100;
+    const specFrac = spec / 100;
+    const prevFrac = prev / 100;
+
+    document.getElementById("sensDisplay").innerHTML =
+      '<span class="big-number">' + sens.toFixed(0) + '%</span>' +
+      ' <span style="font-size:0.78rem;color:var(--text-muted);">of diseased test positive</span>';
+
+    document.getElementById("specDisplay").innerHTML =
+      '<span class="big-number">' + spec.toFixed(0) + '%</span>' +
+      ' <span style="font-size:0.78rem;color:var(--text-muted);">of non-diseased test negative</span>';
+
+    document.getElementById("prevDisplay").innerHTML =
+      '<span class="big-number">' + prev.toFixed(0) + '%</span>' +
+      ' <span style="font-size:0.78rem;color:var(--text-muted);">prevalence in population</span>';
+
+    document.getElementById("sampleSizeDisplay").innerHTML =
+      '<span class="big-number">' + N.toFixed(0) + '</span>' +
+      ' <span style="font-size:0.78rem;color:var(--text-muted);">people in this hypothetical study</span>';
+
+    const counts = computeDiagCounts(N, sensFrac, specFrac, prevFrac);
+    const TP = counts.tp;
+    const FN = counts.fn;
+    const TN = counts.tn;
+    const FP = counts.fp;
+
+    const diseased = counts.diseased;
+    const nonDiseased = counts.nonDiseased;
+
+    const totalPos = TP + FP;
+    const totalNeg = TN + FN;
+
+    const ppv = totalPos > 0 ? TP / totalPos : NaN;
+    const npv = totalNeg > 0 ? TN / totalNeg : NaN;
+
+    const fpr = (FP + TN) > 0 ? FP / (FP + TN) : NaN; // false positive rate
+    const fnr = (TP + FN) > 0 ? FN / (TP + FN) : NaN; // false negative rate
+
+    const diagPanel = document.getElementById("diagStatsPanel");
+    diagPanel.innerHTML = `
+      <div class="result-row">
+        <div class="result-label">True disease status</div>
+        <div class="result-value">
+          Diseased: ${diseased} · Non-diseased: ${nonDiseased}
+        </div>
+        <div class="result-note">Prevalence × sample size</div>
+      </div>
+      <div class="result-row">
+        <div class="result-label">2×2 table</div>
+        <div class="result-note">
+          TP: ${TP} · FN: ${FN} · TN: ${TN} · FP: ${FP}
+        </div>
+        <div class="result-note">
+          (Rows: disease yes/no · Columns: test positive/negative)
+        </div>
+      </div>
+      <div class="result-row">
+        <div class="result-label">PPV</div>
+        <div class="result-value result-highlight">${formatPercent(ppv)}</div>
+        <div class="result-note">TP / (TP + FP) · “If the test is positive, how likely is disease?”</div>
+      </div>
+      <div class="result-row">
+        <div class="result-label">NPV</div>
+        <div class="result-value result-highlight">${formatPercent(npv)}</div>
+        <div class="result-note">TN / (TN + FN) · “If the test is negative, how likely is no disease?”</div>
+      </div>
+      <div class="result-row">
+        <div class="result-label">False positive rate</div>
+        <div class="result-value">${formatPercent(fpr)}</div>
+        <div class="result-note">FP / (FP + TN) = 1 − specificity</div>
+      </div>
+      <div class="result-row">
+        <div class="result-label">False negative rate</div>
+        <div class="result-value">${formatPercent(fnr)}</div>
+        <div class="result-note">FN / (TP + FN) = 1 − sensitivity</div>
+      </div>
+      <div class="result-row">
+        <div class="result-label">Teaching takeaway</div>
+        <div class="result-note">
+          Sensitivity and specificity belong to the test; PPV and NPV depend heavily on prevalence.
+        </div>
+      </div>
+    `;
+
+    renderDiagGrid(counts);
+  }
+
+  // ---------- Pre-test → Post-test (Bayes) ----------
+
+  function probToOdds(p) {
+    if (!Number.isFinite(p) || p <= 0) return 0;
+    if (p >= 1) return Infinity;
+    return p / (1 - p);
+  }
+
+  function oddsToProb(o) {
+    if (!Number.isFinite(o) || o <= 0) return 0;
+    return o / (1 + o);
+  }
+
+  function probToY(p) {
+    // Map probability to y coordinate in Fagan SVG (20–140, higher p => higher on axis)
+    if (!Number.isFinite(p)) p = 0;
+    if (p < 0) p = 0;
+    if (p > 1) p = 1;
+    const top = 20;
+    const bottom = 140;
+    // y decreases as p increases
+    return bottom - (bottom - top) * p;
+  }
+
+  function updateBayes() {
+    const preSlider = document.getElementById("pretestSlider");
+    const lrPlusSlider = document.getElementById("lrPlusSlider");
+    const lrMinusSlider = document.getElementById("lrMinusSlider");
+
+    const prePercent = safeNumber(preSlider.value);
+    const preProb = prePercent / 100;
+
+    // LR+ slider: 10–200 maps to 1.0–20.0
+    const lrPlus = safeNumber(lrPlusSlider.value) / 10;
+    // LR- slider: 5–99 maps to 0.05–0.99
+    const lrMinus = safeNumber(lrMinusSlider.value) / 100;
+
+    document.getElementById("pretestDisplay").innerHTML =
+      '<span class="big-number">' + prePercent.toFixed(0) + '%</span>' +
+      ' <span style="font-size:0.78rem;color:var(--text-muted);">pre-test probability</span>';
+
+    document.getElementById("lrPlusDisplay").innerHTML =
+      '<span class="big-number">' + lrPlus.toFixed(2) + '</span>' +
+      ' <span style="font-size:0.78rem;color:var(--text-muted);">LR+</span>';
+
+    document.getElementById("lrMinusDisplay").innerHTML =
+      '<span class="big-number">' + lrMinus.toFixed(2) + '</span>' +
+      ' <span style="font-size:0.78rem;color:var(--text-muted);">LR−</span>';
+
+    const preOdds = probToOdds(preProb);
+    const postOddsPos = preOdds * lrPlus;
+    const postProbPos = oddsToProb(postOddsPos);
+
+    const postOddsNeg = preOdds * lrMinus;
+    const postProbNeg = oddsToProb(postOddsNeg);
+
+    const bayesPanel = document.getElementById("bayesStatsPanel");
+    bayesPanel.innerHTML = `
+      <div class="result-row">
+        <div class="result-label">Pre-test probability</div>
+        <div class="result-value">${formatProbability(preProb)}</div>
+        <div class="result-note">Based on clinical context, prevalence, and judgement.</div>
+      </div>
+      <div class="result-row">
+        <div class="result-label">After a positive test</div>
+        <div class="result-value result-highlight">${formatProbability(postProbPos)}</div>
+        <div class="result-note">Post-test odds = pre-test odds × LR+</div>
+      </div>
+      <div class="result-row">
+        <div class="result-label">After a negative test</div>
+        <div class="result-value result-highlight">${formatProbability(postProbNeg)}</div>
+        <div class="result-note">Post-test odds = pre-test odds × LR−</div>
+      </div>
+      <div class="result-row">
+        <div class="result-label">Interpretation</div>
+        <div class="result-note">
+          Large LR+ pushes probability up (rules in). Very small LR− pushes probability down (rules out).
+        </div>
+      </div>
+    `;
+
+    // update Fagan SVG
+    const preY = probToY(preProb);
+    const postPosY = probToY(postProbPos);
+    const postNegY = probToY(1 - postProbNeg); // show as probability of no disease? We'll keep same mapping using postProbNeg
+    const postNegYprob = probToY(postProbNeg);
+
+    const preX = 40;
+    const postX = 220;
+
+    const faganPre = document.getElementById("faganPre");
+    const faganPostPos = document.getElementById("faganPostPos");
+    const faganPostNeg = document.getElementById("faganPostNeg");
+    const linePos = document.getElementById("faganLinePos");
+    const lineNeg = document.getElementById("faganLineNeg");
+
+    faganPre.setAttribute("cx", preX);
+    faganPre.setAttribute("cy", preY);
+
+    faganPostPos.setAttribute("cx", postX);
+    faganPostPos.setAttribute("cy", postPosY);
+
+    faganPostNeg.setAttribute("cx", postX);
+    faganPostNeg.setAttribute("cy", postNegYprob);
+
+    linePos.setAttribute("x1", preX);
+    linePos.setAttribute("y1", preY);
+    linePos.setAttribute("x2", postX);
+    linePos.setAttribute("y2", postPosY);
+
+    lineNeg.setAttribute("x1", preX);
+    lineNeg.setAttribute("y1", preY);
+    lineNeg.setAttribute("x2", postX);
+    lineNeg.setAttribute("y2", postNegYprob);
+  }
+
+  // ---------- ROC & threshold ----------
+
+  function rocTPR(x) {
+    // true positive rate (sensitivity) as function of normalized threshold x (0–1)
+    // Lower thresholds -> higher sensitivity.
+    // We use a simple parametric curve; this is conceptual.
+    const alpha = 1.3;
+    return 1 - Math.pow(x, alpha);
+  }
+
+  function rocFPR(x) {
+    // false positive rate (1 - specificity)
+    // Higher thresholds -> lower FPR.
+    const beta = 1.6;
+    return 1 - Math.pow(1 - x, beta);
+  }
+
+  function buildRocPath() {
+    let d = "";
+    const x0 = 0;
+    const fpr0 = rocFPR(x0);
+    const tpr0 = rocTPR(x0);
+    let first = true;
+
+    for (let i = 0; i <= 100; i++) {
+      const x = i / 100;
+      const fpr = rocFPR(x);
+      const tpr = rocTPR(x);
+
+      // map to SVG coords: FPR -> x from 30 (0) to 160 (1)
+      // TPR -> y from 140 (0) to 10 (1)
+      const svgX = 30 + (160 - 30) * fpr;
+      const svgY = 140 - (140 - 10) * tpr;
+
+      if (first) {
+        d += "M " + svgX.toFixed(2) + " " + svgY.toFixed(2);
+        first = false;
+      } else {
+        d += " L " + svgX.toFixed(2) + " " + svgY.toFixed(2);
+      }
+    }
+
+    const path = document.getElementById("rocCurve");
+    path.setAttribute("d", d);
+  }
+
+  function updateRoc() {
+    const slider = document.getElementById("thresholdSlider");
+    const val = safeNumber(slider.value); // 0–100
+    const x = val / 100;
+
+    const fpr = rocFPR(x);
+    const tpr = rocTPR(x);
+    const sens = tpr;
+    const spec = 1 - fpr;
+
+    document.getElementById("thresholdDisplay").innerHTML =
+      '<span class="big-number">' + val.toFixed(0) + '</span>' +
+      ' <span style="font-size:0.78rem;color:var(--text-muted);">relative cut-off (higher = stricter)</span>';
+
+    const rocPoint = document.getElementById("rocPoint");
+    const svgX = 30 + (160 - 30) * fpr;
+    const svgY = 140 - (140 - 10) * tpr;
+
+    rocPoint.setAttribute("cx", svgX);
+    rocPoint.setAttribute("cy", svgY);
+
+    const rocStats = document.getElementById("rocStatsPanel");
+    rocStats.innerHTML = `
+      <div class="result-row">
+        <div class="result-label">Sensitivity (TPR)</div>
+        <div class="result-value result-highlight">${formatPercent(sens)}</div>
+        <div class="result-note">True positive rate at this threshold.</div>
+      </div>
+      <div class="result-row">
+        <div class="result-label">Specificity</div>
+        <div class="result-value result-highlight">${formatPercent(spec)}</div>
+        <div class="result-note">1 − false positive rate.</div>
+      </div>
+      <div class="result-row">
+        <div class="result-label">False positive rate</div>
+        <div class="result-value">${formatPercent(fpr)}</div>
+        <div class="result-note">Points further right = more false positives.</div>
+      </div>
+      <div class="result-row">
+        <div class="result-label">ROC trade-off</div>
+        <div class="result-note">
+          As you move towards the top-right, you gain sensitivity but accept more false positives.
+          Towards the bottom-left, you gain specificity but lose sensitivity.
+        </div>
+      </div>
+    `;
+  }
+
+  // ---------- Init ----------
+
+  document.addEventListener("DOMContentLoaded", () => {
+    // Diagnostic 2x2
+    ["sensSlider", "specSlider", "prevSlider"].forEach(id => {
+      document.getElementById(id).addEventListener("input", updateDiagnostic);
+    });
+    document.getElementById("sampleSizeInput").addEventListener("input", updateDiagnostic);
+
+    // Bayes pre/post
+    ["pretestSlider", "lrPlusSlider", "lrMinusSlider"].forEach(id => {
+      document.getElementById(id).addEventListener("input", updateBayes);
+    });
+
+    // ROC
+    document.getElementById("thresholdSlider").addEventListener("input", updateRoc);
+    buildRocPath();
+
+    // Initial renders
+    updateDiagnostic();
+    updateBayes();
+    updateRoc();
+  });
+</script>
+</body>
+</html>

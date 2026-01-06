@@ -1,0 +1,1548 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Meta-analysis & Heterogeneity Lab</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    :root {
+      --bg: #0f172a;
+      --bg-elevated: #020617;
+      --card-bg: #020617;
+      --accent: #38bdf8;
+      --accent-soft: rgba(56, 189, 248, 0.15);
+      --accent-strong: #0ea5e9;
+      --text: #e5e7eb;
+      --text-muted: #9ca3af;
+      --danger: #f97373;
+      --warning: #fbbf24;
+      --success: #22c55e;
+      --radius-lg: 1.25rem;
+      --shadow-soft: 0 18px 45px rgba(15, 23, 42, 0.9);
+      --border-subtle: 1px solid rgba(148, 163, 184, 0.22);
+      --font-sans: system-ui, -apple-system, BlinkMacSystemFont, "SF Pro Text",
+                   "Segoe UI", sans-serif;
+    }
+
+    * { box-sizing: border-box; }
+
+    html, body {
+      margin: 0;
+      padding: 0;
+      background: radial-gradient(circle at top left, #1f2937 0, #020617 45%, #000 100%);
+      color: var(--text);
+      font-family: var(--font-sans);
+    }
+
+    body {
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: stretch;
+      padding: 24px;
+    }
+
+    .app-shell {
+      max-width: 1200px;
+      width: 100%;
+      margin: auto;
+      background: linear-gradient(145deg, rgba(15, 23, 42, 0.96), rgba(15, 23, 42, 0.92));
+      border-radius: 1.5rem;
+      box-shadow: var(--shadow-soft);
+      border: 1px solid rgba(148, 163, 184, 0.35);
+      padding: 24px 24px 28px;
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+      backdrop-filter: blur(12px);
+    }
+
+    @media (max-width: 900px) {
+      body { padding: 12px; }
+      .app-shell {
+        padding: 18px 14px 22px;
+        border-radius: 1.1rem;
+      }
+    }
+
+    header {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      gap: 12px;
+      align-items: flex-start;
+    }
+
+    .title-block h1 {
+      font-size: clamp(1.6rem, 2.1vw, 1.9rem);
+      margin: 0;
+      letter-spacing: 0.02em;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .title-pill {
+      font-size: 0.8rem;
+      padding: 2px 10px;
+      border-radius: 999px;
+      border: 1px solid rgba(148, 163, 184, 0.4);
+      color: var(--text-muted);
+    }
+
+    .subtitle {
+      font-size: 0.9rem;
+      color: var(--text-muted);
+      margin-top: 4px;
+      max-width: 780px;
+    }
+
+    .tagline {
+      font-size: 0.78rem;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      color: var(--accent);
+      background: rgba(56, 189, 248, 0.1);
+      border-radius: 999px;
+      padding: 4px 12px;
+      border: 1px solid rgba(56, 189, 248, 0.35);
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .tagline-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 999px;
+      background: var(--accent);
+      box-shadow: 0 0 10px rgba(56, 189, 248, 0.85);
+    }
+
+    h2 {
+      margin: 0 0 10px;
+      font-size: 1.08rem;
+      letter-spacing: 0.02em;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 6px;
+    }
+
+    h2 span.label {
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.14em;
+      color: var(--text-muted);
+    }
+
+    main {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .card {
+      background: radial-gradient(circle at top right,
+          rgba(56, 189, 248, 0.06) 0,
+          rgba(15, 23, 42, 0.98) 40%,
+          #020617 100%);
+      border-radius: var(--radius-lg);
+      border: var(--border-subtle);
+      padding: 14px 16px 16px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .card::before {
+      content: "";
+      position: absolute;
+      inset: -120px;
+      background-image: radial-gradient(circle at 0 -40px,
+        rgba(56, 189, 248, 0.12),
+        transparent 60%);
+      opacity: 0.7;
+      pointer-events: none;
+    }
+
+    .card-inner {
+      position: relative;
+      z-index: 1;
+    }
+
+    .row-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1.2fr) minmax(0, 1.3fr);
+      gap: 16px;
+    }
+
+    @media (max-width: 1000px) {
+      .row-grid {
+        grid-template-columns: minmax(0, 1fr);
+      }
+    }
+
+    .grid-2col {
+      display: grid;
+      grid-template-columns: minmax(0, 1.2fr) minmax(0, 1.3fr);
+      gap: 12px;
+    }
+
+    @media (max-width: 900px) {
+      .grid-2col {
+        grid-template-columns: minmax(0, 1fr);
+      }
+    }
+
+    .hint {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      margin-bottom: 6px;
+    }
+
+    .inputs-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 8px 12px;
+      margin-bottom: 6px;
+    }
+
+    @media (max-width: 600px) {
+      .inputs-grid {
+        grid-template-columns: minmax(0, 1fr);
+      }
+    }
+
+    .input-group {
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+      font-size: 0.82rem;
+    }
+
+    .input-label {
+      font-size: 0.78rem;
+      text-transform: uppercase;
+      letter-spacing: 0.14em;
+      color: var(--text-muted);
+    }
+
+    .input-sub {
+      font-size: 0.72rem;
+      color: var(--text-muted);
+    }
+
+    input[type="number"], input[type="text"], select {
+      width: 100%;
+      padding: 4px 6px;
+      border-radius: 0.5rem;
+      border: 1px solid rgba(148, 163, 184, 0.6);
+      background: rgba(15, 23, 42, 0.98);
+      color: var(--text);
+      font-size: 0.83rem;
+    }
+
+    input[type="number"]:focus,
+    input[type="text"]:focus,
+    select:focus {
+      outline: none;
+      border-color: rgba(56, 189, 248, 0.9);
+      box-shadow: 0 0 0 1px rgba(56, 189, 248, 0.4);
+    }
+
+    input[type="range"] {
+      width: 100%;
+    }
+
+    button {
+      font-size: 0.8rem;
+      text-transform: uppercase;
+      letter-spacing: 0.14em;
+      border-radius: 999px;
+      padding: 5px 12px;
+      border: 1px solid rgba(56, 189, 248, 0.9);
+      background: radial-gradient(circle at top left,
+          rgba(56, 189, 248, 0.3),
+          rgba(15, 23, 42, 0.98));
+      color: var(--accent-strong);
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    button:disabled {
+      opacity: 0.4;
+      cursor: default;
+    }
+
+    button:hover:not(:disabled) {
+      box-shadow: 0 0 0 1px rgba(56, 189, 248, 0.6);
+      transform: translateY(-0.5px);
+    }
+
+    .button-ghost {
+      border-color: rgba(148, 163, 184, 0.7);
+      background: rgba(15, 23, 42, 0.96);
+      color: var(--text-muted);
+    }
+
+    .button-ghost:hover {
+      border-color: rgba(148, 163, 184, 1);
+    }
+
+    .results-card {
+      border-radius: 1rem;
+      border: 1px solid rgba(148, 163, 184, 0.5);
+      background: rgba(15, 23, 42, 0.98);
+      padding: 8px 10px 10px;
+      font-size: 0.83rem;
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 6px 10px;
+    }
+
+    @media (max-width: 600px) {
+      .results-card {
+        grid-template-columns: minmax(0, 1fr);
+      }
+    }
+
+    .result-row {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .result-label {
+      font-size: 0.78rem;
+      text-transform: uppercase;
+      letter-spacing: 0.14em;
+      color: var(--text-muted);
+    }
+
+    .result-value {
+      font-family: "SF Mono", ui-monospace, Menlo, Monaco, Consolas,
+                   "Liberation Mono", "Courier New", monospace;
+      font-size: 0.88rem;
+    }
+
+    .result-note {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+    }
+
+    .result-highlight { color: var(--accent-strong); }
+    .result-bad { color: #fecaca; }
+
+    .big-number {
+      font-size: 1.1rem;
+      font-family: "SF Mono", ui-monospace, Menlo, Monaco, Consolas,
+                   "Liberation Mono", "Courier New", monospace;
+    }
+
+    .big-number.good { color: var(--accent-strong); }
+    .big-number.bad { color: #fecaca; }
+
+    .pill-soft {
+      font-size: 0.72rem;
+      padding: 2px 7px;
+      border-radius: 999px;
+      border: 1px solid rgba(148, 163, 184, 0.55);
+      background: rgba(15, 23, 42, 0.95);
+      color: var(--text-muted);
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.8rem;
+      border-radius: 0.9rem;
+      overflow: hidden;
+      border: 1px solid rgba(148, 163, 184, 0.45);
+      background: rgba(15, 23, 42, 0.98);
+    }
+
+    th, td {
+      border-bottom: 1px solid rgba(55, 65, 81, 0.85);
+      padding: 4px 6px;
+      text-align: center;
+    }
+
+    th {
+      background: rgba(15, 23, 42, 0.96);
+      font-weight: 500;
+    }
+
+    tr:last-child td {
+      border-bottom: none;
+    }
+
+    th.col-header {
+      font-size: 0.78rem;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      color: var(--text-muted);
+    }
+
+    td.row-header {
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      color: var(--text-muted);
+      text-align: left;
+      background: rgba(15, 23, 42, 0.9);
+    }
+
+    .study-table {
+      max-height: 210px;
+      overflow-y: auto;
+      margin-top: 6px;
+    }
+
+    .meta-controls {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      align-items: center;
+      margin-top: 6px;
+    }
+
+    .radio-group {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 0.78rem;
+      color: var(--text-muted);
+    }
+
+    .radio-group input {
+      margin: 0;
+    }
+
+    .scenario-buttons {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-top: 4px;
+    }
+
+    .forest-wrapper {
+      border-radius: 0.9rem;
+      border: 1px solid rgba(148, 163, 184, 0.45);
+      background: rgba(15, 23, 42, 0.96);
+      padding: 8px 10px 8px;
+      font-size: 0.78rem;
+    }
+
+    .forest-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      gap: 8px;
+      margin-bottom: 4px;
+    }
+
+    .forest-title {
+      font-size: 0.82rem;
+      font-weight: 500;
+    }
+
+    .forest-sub {
+      font-size: 0.72rem;
+      color: var(--text-muted);
+    }
+
+    .funnel-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+      gap: 12px;
+    }
+
+    @media (max-width: 900px) {
+      .funnel-grid {
+        grid-template-columns: minmax(0, 1fr);
+      }
+    }
+
+    .funnel-panel {
+      border-radius: 0.9rem;
+      border: 1px solid rgba(148, 163, 184, 0.45);
+      background: rgba(15, 23, 42, 0.96);
+      padding: 8px 10px 8px;
+      font-size: 0.78rem;
+    }
+
+    .funnel-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      gap: 8px;
+      margin-bottom: 4px;
+    }
+
+    .funnel-title {
+      font-size: 0.82rem;
+      font-weight: 500;
+    }
+
+    .funnel-sub {
+      font-size: 0.72rem;
+      color: var(--text-muted);
+    }
+
+    footer {
+      margin-top: 8px;
+      font-size: 0.72rem;
+      color: var(--text-muted);
+      display: flex;
+      justify-content: space-between;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+  </style>
+</head>
+<body>
+<div class="app-shell">
+  <header>
+    <div class="title-block">
+      <h1>
+        Meta-analysis &amp; Heterogeneity Lab
+        <span class="title-pill">Forest plots · I² · Funnel plots</span>
+      </h1>
+      <div class="subtitle">
+        Build mini meta-analyses, switch between low vs high heterogeneity scenarios, and
+        demonstrate publication bias with a live funnel-plot sandbox. All logic runs locally
+        in your browser.
+      </div>
+    </div>
+    <div class="tagline">
+      <span class="tagline-dot"></span>
+      Interactive EBM meta-analysis demo
+    </div>
+  </header>
+
+  <main>
+    <!-- 1. Mini Meta-analysis Builder -->
+    <section class="card">
+      <div class="card-inner">
+        <h2>
+          Mini Meta-analysis Builder
+          <span class="label">Forest plot · Fixed vs random effects</span>
+        </h2>
+        <div class="hint">
+          Add “studies” with a log-effect estimate and standard error (e.g. log RR or log OR).
+          The app shows a forest plot, pooled fixed- and random-effects estimates, and
+          heterogeneity statistics (Q, I², τ²). Toggle models and exclude studies to see the impact.
+        </div>
+
+        <div class="row-grid">
+          <div>
+            <div class="inputs-grid">
+              <div class="input-group">
+                <div class="input-label">Study name</div>
+                <input type="text" id="studyNameInput" value="Study A" />
+                <div class="input-sub">Any short label is fine.</div>
+              </div>
+              <div class="input-group">
+                <div class="input-label">Effect (log scale)</div>
+                <input type="number" id="studyEffectInput" value="0.2" step="0.05" />
+                <div class="input-sub">e.g. log(RR). RR = exp(effect).</div>
+              </div>
+              <div class="input-group">
+                <div class="input-label">Standard error (SE)</div>
+                <input type="number" id="studySeInput" value="0.15" step="0.01" />
+                <div class="input-sub">Smaller SE ≈ larger, more precise study.</div>
+              </div>
+              <div class="input-group">
+                <div class="input-label">Pre-made scenarios</div>
+                <div class="scenario-buttons">
+                  <button type="button" class="button-ghost" id="scenarioNoneBtn">
+                    No heterogeneity
+                  </button>
+                  <button type="button" class="button-ghost" id="scenarioModerateBtn">
+                    Moderate heterogeneity
+                  </button>
+                  <button type="button" class="button-ghost" id="scenarioExtremeBtn">
+                    Extreme heterogeneity
+                  </button>
+                </div>
+                <div class="input-sub">Replace current studies with a scenario.</div>
+              </div>
+            </div>
+            <button id="addStudyBtn">＋ Add / update study</button>
+
+            <div class="meta-controls">
+              <span class="pill-soft">Pooling model:</span>
+              <label class="radio-group">
+                <input type="radio" name="poolModel" value="fixed" checked />
+                <span>Fixed effect</span>
+              </label>
+              <label class="radio-group">
+                <input type="radio" name="poolModel" value="random" />
+                <span>Random effects (DL)</span>
+              </label>
+            </div>
+
+            <div class="study-table" id="studiesTableContainer">
+              <!-- filled by JS -->
+            </div>
+
+            <div class="hint" style="margin-top:4px;">
+              Teaching trick: add one very large study (tiny SE) and one very noisy study (big SE).
+              Show how the large study dominates fixed-effect weighting, and how random effects give
+              small studies relatively more weight when τ² is large.
+            </div>
+          </div>
+
+          <div>
+            <div class="results-card" id="metaStatsPanel">
+              <!-- filled by JS -->
+            </div>
+
+            <div class="forest-wrapper" style="margin-top:8px;">
+              <div class="forest-header">
+                <div class="forest-title">Forest plot</div>
+                <div class="forest-sub">
+                  Squares = individual studies (size ∝ weight). Diamond = pooled estimate
+                  (current model).
+                </div>
+              </div>
+              <svg id="forestSvg" viewBox="0 0 360 260" style="width:100%; height:auto; background:none;">
+                <!-- content filled by JS -->
+              </svg>
+              <div class="hint" style="margin-top:4px;">
+                X-axis is the effect on a log scale, with 1.0 as “no effect”. CIs crossing 1 are
+                not statistically significant at 95%.
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 2. Heterogeneity Scenario Switcher (shares same data but summarized) -->
+    <section class="card">
+      <div class="card-inner">
+        <h2>
+          Heterogeneity Scenario Snapshot
+          <span class="label">Q statistic · I² · τ²</span>
+        </h2>
+        <div class="hint">
+          Use the scenario buttons above to switch between “no”, “moderate” and “extreme”
+          heterogeneity setups. This panel simply re-summarizes whatever studies are currently
+          loaded, so your forest plot and stats stay synchronized.
+        </div>
+
+        <div class="results-card" id="heteroStatsPanel">
+          <!-- filled by JS, mirrors metaStatsPanel but with heterogeneity emphasis -->
+        </div>
+      </div>
+    </section>
+
+    <!-- 3. Publication Bias / Funnel Plot Sandbox -->
+    <section class="card">
+      <div class="card-inner">
+        <h2>
+          Publication Bias &amp; Funnel Plot Sandbox
+          <span class="label">Small-study effects · Selective reporting</span>
+        </h2>
+        <div class="hint">
+          Generate a set of studies from a true RR=1 (log effect = 0). Then hide non-significant
+          small studies (large SE) to see how a “beautiful” but biased funnel emerges.
+        </div>
+
+        <div class="grid-2col">
+          <div>
+            <div class="input-group">
+              <div class="input-label">Simulated studies</div>
+              <div class="input-sub">
+                We simulate continuous effect estimates as <em>log RR</em> around 0, with different
+                standard errors (SE) to mimic varying study sizes.
+              </div>
+            </div>
+            <div style="margin-top:4px; display:flex; flex-wrap:wrap; gap:8px; align-items:center;">
+              <button id="funnelGenerateBtn">🎲 Generate 50 studies (true RR=1)</button>
+              <label class="radio-group">
+                <input type="checkbox" id="funnelHideCheckbox" />
+                <span>Hide non-significant small studies (p ≥ 0.05, large SE)</span>
+              </label>
+            </div>
+            <div class="hint" style="margin-top:6px;">
+              Talking point: “If small, non-significant studies quietly disappear in a file drawer,
+              the remaining literature can falsely suggest a strong effect.”
+            </div>
+            <div class="results-card" id="funnelStatsPanel" style="margin-top:6px;">
+              <!-- filled by JS -->
+            </div>
+          </div>
+
+          <div class="funnel-grid">
+            <div class="funnel-panel">
+              <div class="funnel-header">
+                <div class="funnel-title">Funnel plot (all studies)</div>
+                <div class="funnel-sub">Under publication without bias, points should form a symmetric funnel.</div>
+              </div>
+              <svg id="funnelAllSvg" viewBox="0 0 260 220" style="width:100%; height:auto;">
+                <!-- filled by JS -->
+              </svg>
+            </div>
+            <div class="funnel-panel">
+              <div class="funnel-header">
+                <div class="funnel-title">Funnel plot (after bias)</div>
+                <div class="funnel-sub">Hiding non-significant small studies distorts symmetry.</div>
+              </div>
+              <svg id="funnelBiasedSvg" viewBox="0 0 260 220" style="width:100%; height:auto;">
+                <!-- filled by JS -->
+              </svg>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <div>
+      Live demo idea: ask the audience to “rescue” a biased meta-analysis by re-including
+      excluded studies or choosing a different model.
+    </div>
+    <div>
+      Save this file as <code>meta_heterogeneity_playground.html</code> and open it offline
+      for your EBM teaching session.
+    </div>
+  </footer>
+</div>
+
+<script>
+  // ---------- Utility helpers ----------
+
+  function safeNumber(v) {
+    const n = Number(v);
+    return Number.isFinite(n) ? n : 0;
+  }
+
+  function randNormal() {
+    // Box–Muller
+    let u = 0, w = 0;
+    while (u === 0) u = Math.random();
+    while (w === 0) w = Math.random();
+    return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * w);
+  }
+
+  function normalCDF(x) {
+    // Approximate N(0,1) CDF via erf
+    return 0.5 * (1 + erf(x / Math.SQRT2));
+  }
+
+  function erf(x) {
+    // Abramowitz & Stegun 7.1.26 approximation
+    const sign = x < 0 ? -1 : 1;
+    const a1 = 0.254829592;
+    const a2 = -0.284496736;
+    const a3 = 1.421413741;
+    const a4 = -1.453152027;
+    const a5 = 1.061405429;
+    const p = 0.3275911;
+    const absx = Math.abs(x);
+    const t = 1 / (1 + p * absx);
+    const y =
+      1 -
+      (((((a5 * t + a4) * t) + a3) * t + a2) * t + a1) *
+      t *
+      Math.exp(-absx * absx);
+    return sign * y;
+  }
+
+  function formatPercent(p, d = 1) {
+    if (!Number.isFinite(p)) return "—";
+    return (p * 100).toFixed(d) + "%";
+  }
+
+  function formatRatio(x, d = 2) {
+    if (!Number.isFinite(x) || x <= 0) return "—";
+    return x.toFixed(d);
+  }
+
+  function formatNumber(x, d = 2) {
+    if (!Number.isFinite(x)) return "—";
+    return x.toFixed(d);
+  }
+
+  function oddsRatio(a, b, c, d) {
+    // continuity correction
+    if (a === 0 || b === 0 || c === 0 || d === 0) {
+      a += 0.5; b += 0.5; c += 0.5; d += 0.5;
+    }
+    return (a * d) / (b * c);
+  }
+
+  // ---------- Meta-analysis data & scenarios ----------
+
+  let metaStudies = [];
+  let nextStudyId = 1;
+
+  function createScenarioNone() {
+    // No heterogeneity: effects all ~0 with similar SE
+    return [
+      { name: "Study 1", yi: -0.02, se: 0.12 },
+      { name: "Study 2", yi: 0.03,  se: 0.11 },
+      { name: "Study 3", yi: 0.00,  se: 0.10 },
+      { name: "Study 4", yi: 0.04,  se: 0.09 },
+      { name: "Study 5", yi: -0.01, se: 0.13 }
+    ];
+  }
+
+  function createScenarioModerate() {
+    // Moderate heterogeneity around logRR ~ 0.2
+    return [
+      { name: "Study A", yi: 0.10, se: 0.20 },
+      { name: "Study B", yi: 0.25, se: 0.18 },
+      { name: "Study C", yi: 0.35, se: 0.16 },
+      { name: "Study D", yi: 0.15, se: 0.22 },
+      { name: "Study E", yi: 0.30, se: 0.14 },
+      { name: "Study F", yi: 0.05, se: 0.30 }
+    ];
+  }
+
+  function createScenarioExtreme() {
+    // Extreme heterogeneity: some benefit, some harm, big range in SE
+    return [
+      { name: "Small trial 1", yi: 0.80, se: 0.45 },
+      { name: "Small trial 2", yi: -0.40, se: 0.50 },
+      { name: "Medium trial 1", yi: 0.10, se: 0.20 },
+      { name: "Medium trial 2", yi: 0.60, se: 0.22 },
+      { name: "Large trial", yi: 0.05, se: 0.08 },
+      { name: "Very small trial", yi: 1.00, se: 0.60 }
+    ];
+  }
+
+  function loadScenario(scenarioStudies) {
+    metaStudies = scenarioStudies.map(s => ({
+      id: nextStudyId++,
+      name: s.name,
+      yi: s.yi,
+      se: s.se,
+      included: true
+    }));
+    renderStudiesTable();
+    recalcMeta();
+  }
+
+  function addOrUpdateStudyFromInputs() {
+    const name = document.getElementById("studyNameInput").value.trim() || "Study";
+    const yi = safeNumber(document.getElementById("studyEffectInput").value);
+    const se = Math.abs(safeNumber(document.getElementById("studySeInput").value));
+    if (se <= 0) return;
+
+    // If name matches an existing study, update that; else add new
+    const existing = metaStudies.find(s => s.name === name);
+    if (existing) {
+      existing.yi = yi;
+      existing.se = se;
+      existing.included = true;
+    } else {
+      metaStudies.push({
+        id: nextStudyId++,
+        name,
+        yi,
+        se,
+        included: true
+      });
+    }
+    renderStudiesTable();
+    recalcMeta();
+  }
+
+  function toggleStudyIncluded(id, included) {
+    const s = metaStudies.find(st => st.id === id);
+    if (s) {
+      s.included = included;
+      recalcMeta();
+    }
+  }
+
+  function removeStudy(id) {
+    metaStudies = metaStudies.filter(s => s.id !== id);
+    renderStudiesTable();
+    recalcMeta();
+  }
+
+  function renderStudiesTable() {
+    const container = document.getElementById("studiesTableContainer");
+    if (!metaStudies.length) {
+      container.innerHTML = `<div class="hint">No studies yet. Use the form above or load a scenario.</div>`;
+      return;
+    }
+
+    let html = `
+      <table>
+        <thead>
+          <tr>
+            <th class="col-header">Include</th>
+            <th class="col-header">Study</th>
+            <th class="col-header">log effect</th>
+            <th class="col-header">RR</th>
+            <th class="col-header">SE</th>
+            <th class="col-header">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+    `;
+
+    metaStudies.forEach(s => {
+      const rr = Math.exp(s.yi);
+      html += `
+        <tr>
+          <td>
+            <input type="checkbox" data-study-id="${s.id}" class="includeCheckbox" ${s.included ? "checked" : ""} />
+          </td>
+          <td>${s.name}</td>
+          <td>${s.yi.toFixed(3)}</td>
+          <td>${rr.toFixed(2)}</td>
+          <td>${s.se.toFixed(3)}</td>
+          <td>
+            <button type="button" class="button-ghost removeStudyBtn" data-study-id="${s.id}">✕</button>
+          </td>
+        </tr>
+      `;
+    });
+
+    html += `</tbody></table>`;
+    container.innerHTML = html;
+
+    // Attach handlers
+    container.querySelectorAll(".includeCheckbox").forEach(cb => {
+      cb.addEventListener("change", (e) => {
+        const id = Number(e.target.getAttribute("data-study-id"));
+        toggleStudyIncluded(id, e.target.checked);
+      });
+    });
+
+    container.querySelectorAll(".removeStudyBtn").forEach(btn => {
+      btn.addEventListener("click", (e) => {
+        const id = Number(e.target.getAttribute("data-study-id"));
+        removeStudy(id);
+      });
+    });
+  }
+
+  // ---------- Meta-analysis calculations ----------
+
+  function getSelectedModel() {
+    const radios = document.querySelectorAll('input[name="poolModel"]');
+    for (const r of radios) {
+      if (r.checked) return r.value; // "fixed" or "random"
+    }
+    return "fixed";
+  }
+
+  function recalcMeta() {
+    const included = metaStudies.filter(s => s.included && s.se > 0);
+    const k = included.length;
+
+    const statsPanel = document.getElementById("metaStatsPanel");
+    const heteroPanel = document.getElementById("heteroStatsPanel");
+    const forestSvg = document.getElementById("forestSvg");
+
+    if (!k) {
+      statsPanel.innerHTML = `
+        <div class="result-row">
+          <div class="result-label">Meta-analysis</div>
+          <div class="result-note">Add at least one study to see the forest plot and pooled estimates.</div>
+        </div>`;
+      heteroPanel.innerHTML = `
+        <div class="result-row">
+          <div class="result-label">Heterogeneity</div>
+          <div class="result-note">No studies included.</div>
+        </div>`;
+      forestSvg.innerHTML = "";
+      return;
+    }
+
+    const yi = included.map(s => s.yi);
+    const vi = included.map(s => s.se * s.se);
+    const wi = vi.map(v => 1 / v);
+
+    const sumW = wi.reduce((a, b) => a + b, 0);
+    const sumWy = yi.reduce((acc, y, i) => acc + wi[i] * y, 0);
+    const yFixed = sumWy / sumW;
+    const varFixed = 1 / sumW;
+    const seFixed = Math.sqrt(varFixed);
+
+    const Q = yi.reduce((acc, y, i) => acc + wi[i] * Math.pow(y - yFixed, 2), 0);
+    const df = k - 1;
+    const C = sumW - wi.reduce((acc, w) => acc + w * w, 0) / sumW;
+    let tau2 = 0;
+    if (k > 1) {
+      const rawTau2 = (Q - df) / C;
+      tau2 = Math.max(0, rawTau2);
+    }
+
+    const I2 = (k > 1 && Q > df)
+      ? Math.max(0, (Q - df) / Q) * 100
+      : 0;
+
+    // Random effects
+    const wiStar = vi.map(v => 1 / (v + tau2));
+    const sumWStar = wiStar.reduce((a, b) => a + b, 0);
+    const sumWStarY = yi.reduce((acc, y, i) => acc + wiStar[i] * y, 0);
+    const yRandom = sumWStarY / sumWStar;
+    const varRandom = 1 / sumWStar;
+    const seRandom = Math.sqrt(varRandom);
+
+    const zCrit = 1.96;
+    const selectedModel = getSelectedModel();
+    const pooledY = selectedModel === "fixed" ? yFixed : yRandom;
+    const pooledSE = selectedModel === "fixed" ? seFixed : seRandom;
+    const pooledLow = pooledY - zCrit * pooledSE;
+    const pooledHigh = pooledY + zCrit * pooledSE;
+
+    const rrFixed = Math.exp(yFixed);
+    const rrFixedLow = Math.exp(yFixed - zCrit * seFixed);
+    const rrFixedHigh = Math.exp(yFixed + zCrit * seFixed);
+
+    const rrRandom = Math.exp(yRandom);
+    const rrRandomLow = Math.exp(yRandom - zCrit * seRandom);
+    const rrRandomHigh = Math.exp(yRandom + zCrit * seRandom);
+
+    const weightsFixed = wi.map(w => w / sumW);
+    const weightsRandom = wiStar.map(w => w / sumWStar);
+
+    // Stats panel
+    statsPanel.innerHTML = `
+      <div class="result-row">
+        <div class="result-label">Fixed effect (inverse-variance)</div>
+        <div class="result-value">
+          log RR = ${formatNumber(yFixed, 3)} (SE ${formatNumber(seFixed, 3)})<br/>
+          RR = ${formatRatio(rrFixed)} [${formatRatio(rrFixedLow)}, ${formatRatio(rrFixedHigh)}]
+        </div>
+        <div class="result-note">
+          Larger studies (small SE) dominate the pooling.
+        </div>
+      </div>
+      <div class="result-row">
+        <div class="result-label">Random effects (DerSimonian–Laird)</div>
+        <div class="result-value result-highlight">
+          log RR = ${formatNumber(yRandom, 3)} (SE ${formatNumber(seRandom, 3)})<br/>
+          RR = ${formatRatio(rrRandom)} [${formatRatio(rrRandomLow)}, ${formatRatio(rrRandomHigh)}]
+        </div>
+        <div class="result-note">
+          Between-study variance τ² = ${formatNumber(tau2, 4)} gives small studies relatively more weight.
+        </div>
+      </div>
+      <div class="result-row">
+        <div class="result-label">Study count</div>
+        <div class="result-value">${k} included</div>
+        <div class="result-note">
+          You can exclude a study in the table to see its impact on pooled effects.
+        </div>
+      </div>
+      <div class="result-row">
+        <div class="result-label">Current pooled model</div>
+        <div class="result-value">
+          ${selectedModel === "fixed" ? "Fixed-effect model" : "Random-effects model"}
+        </div>
+        <div class="result-note">
+          The forest diamond uses this model.
+        </div>
+      </div>
+    `;
+
+    // Heterogeneity snapshot panel
+    heteroPanel.innerHTML = `
+      <div class="result-row">
+        <div class="result-label">Q statistic</div>
+        <div class="result-value">${formatNumber(Q, 2)} (df = ${df})</div>
+        <div class="result-note">
+          Measures total dispersion around the fixed-effect estimate.
+        </div>
+      </div>
+      <div class="result-row">
+        <div class="result-label">I²</div>
+        <div class="result-value result-highlight">${formatNumber(I2, 1)}%</div>
+        <div class="result-note">
+          Proportion of total variation due to between-study heterogeneity.
+        </div>
+      </div>
+      <div class="result-row">
+        <div class="result-label">τ² (between-study variance)</div>
+        <div class="result-value">${formatNumber(tau2, 4)}</div>
+        <div class="result-note">
+          Drives how much random-effects down-weights large trials and up-weights small ones.
+        </div>
+      </div>
+      <div class="result-row">
+        <div class="result-label">Interpretation</div>
+        <div class="result-note">
+          “No heterogeneity” ≈ I² ≈ 0. Moderate ≈ 30–60%. Extreme ≈ &gt;75%. Use scenarios above
+          to illustrate these regimes.
+        </div>
+      </div>
+    `;
+
+    renderForestPlot(included, {
+      pooledY,
+      pooledLow,
+      pooledHigh,
+      selectedModel,
+      weightsFixed,
+      weightsRandom
+    });
+  }
+
+  function renderForestPlot(studies, metaInfo) {
+    const svg = document.getElementById("forestSvg");
+    svg.innerHTML = "";
+
+    const k = studies.length;
+    if (!k) return;
+
+    const { pooledY, pooledLow, pooledHigh, selectedModel, weightsFixed, weightsRandom } = metaInfo;
+    const zCrit = 1.96;
+
+    // Determine x-range based on CIs + pooled
+    let minX = Infinity;
+    let maxX = -Infinity;
+    studies.forEach((s, i) => {
+      const low = s.yi - zCrit * s.se;
+      const high = s.yi + zCrit * s.se;
+      if (low < minX) minX = low;
+      if (high > maxX) maxX = high;
+    });
+    if (pooledLow < minX) minX = pooledLow;
+    if (pooledHigh > maxX) maxX = pooledHigh;
+
+    // Ensure 0 (no effect) is in range
+    if (minX > 0) minX = 0;
+    if (maxX < 0) maxX = 0;
+
+    if (minX === maxX) {
+      minX -= 1;
+      maxX += 1;
+    }
+
+    const marginLeft = 60;
+    const marginRight = 20;
+    const marginTop = 20;
+    const marginBottom = 40;
+    const width = 360;
+    const height = 260;
+    const innerW = width - marginLeft - marginRight;
+    const innerH = height - marginTop - marginBottom;
+
+    const xScale = x =>
+      marginLeft + ((x - minX) / (maxX - minX)) * innerW;
+
+    function yForIndex(i) {
+      const rowHeight = innerH / (k + 2); // +2 for pooled rows
+      return marginTop + rowHeight * (i + 1);
+    }
+
+    // Axis line
+    const axis = document.createElementNS("http://www.w3.org/2000/svg", "line");
+    axis.setAttribute("x1", marginLeft);
+    axis.setAttribute("x2", marginLeft + innerW);
+    axis.setAttribute("y1", height - marginBottom);
+    axis.setAttribute("y2", height - marginBottom);
+    axis.setAttribute("stroke", "#4b5563");
+    axis.setAttribute("stroke-width", "1");
+    svg.appendChild(axis);
+
+    // X-axis ticks at min, 0, max (RR labels)
+    const ticks = [
+      { x: minX, label: Math.exp(minX).toFixed(2) },
+      { x: 0,    label: "1.00" },
+      { x: maxX, label: Math.exp(maxX).toFixed(2) }
+    ];
+
+    ticks.forEach(t => {
+      const xx = xScale(t.x);
+      const tick = document.createElementNS("http://www.w3.org/2000/svg", "line");
+      tick.setAttribute("x1", xx);
+      tick.setAttribute("x2", xx);
+      tick.setAttribute("y1", height - marginBottom);
+      tick.setAttribute("y2", height - marginBottom + 4);
+      tick.setAttribute("stroke", "#6b7280");
+      tick.setAttribute("stroke-width", "1");
+      svg.appendChild(tick);
+
+      const lbl = document.createElementNS("http://www.w3.org/2000/svg", "text");
+      lbl.setAttribute("x", xx);
+      lbl.setAttribute("y", height - 4);
+      lbl.setAttribute("fill", "#9ca3af");
+      lbl.setAttribute("font-size", "8");
+      lbl.setAttribute("text-anchor", "middle");
+      lbl.textContent = t.label;
+      svg.appendChild(lbl);
+    });
+
+    // Reference line at 0 (RR=1)
+    const xNull = xScale(0);
+    const refLine = document.createElementNS("http://www.w3.org/2000/svg", "line");
+    refLine.setAttribute("x1", xNull);
+    refLine.setAttribute("x2", xNull);
+    refLine.setAttribute("y1", marginTop);
+    refLine.setAttribute("y2", height - marginBottom);
+    refLine.setAttribute("stroke", "#6b7280");
+    refLine.setAttribute("stroke-dasharray", "3 3");
+    refLine.setAttribute("stroke-width", "1");
+    svg.appendChild(refLine);
+
+    // Study rows
+    const maxWeight = Math.max(...weightsFixed);
+    const maxWeightRandom = Math.max(...weightsRandom);
+
+    studies.forEach((s, idx) => {
+      const y = yForIndex(idx);
+      const low = s.yi - zCrit * s.se;
+      const high = s.yi + zCrit * s.se;
+      const x1 = xScale(low);
+      const x2 = xScale(high);
+      const xEst = xScale(s.yi);
+
+      const weight = selectedModel === "fixed" ? weightsFixed[idx] : weightsRandom[idx];
+      const maxW = selectedModel === "fixed" ? maxWeight : maxWeightRandom;
+      const normalized = maxW > 0 ? weight / maxW : 0;
+      const boxWidth = 6 + 16 * normalized; // 6–22
+      const boxHeight = 6 + 2 * normalized;
+
+      // CI line
+      const ciLine = document.createElementNS("http://www.w3.org/2000/svg", "line");
+      ciLine.setAttribute("x1", x1);
+      ciLine.setAttribute("x2", x2);
+      ciLine.setAttribute("y1", y);
+      ciLine.setAttribute("y2", y);
+      ciLine.setAttribute("stroke", "#e5e7eb");
+      ciLine.setAttribute("stroke-width", "1.1");
+      svg.appendChild(ciLine);
+
+      // Study box
+      const rect = document.createElementNS("http://www.w3.org/2000/svg", "rect");
+      rect.setAttribute("x", xEst - boxWidth / 2);
+      rect.setAttribute("y", y - boxHeight / 2);
+      rect.setAttribute("width", boxWidth);
+      rect.setAttribute("height", boxHeight);
+      rect.setAttribute("fill", "#38bdf8");
+      rect.setAttribute("stroke", "#0ea5e9");
+      rect.setAttribute("stroke-width", "0.8");
+      svg.appendChild(rect);
+
+      // Study label (name + weight)
+      const label = document.createElementNS("http://www.w3.org/2000/svg", "text");
+      label.setAttribute("x", marginLeft - 6);
+      label.setAttribute("y", y + 3);
+      label.setAttribute("fill", "#e5e7eb");
+      label.setAttribute("font-size", "8");
+      label.setAttribute("text-anchor", "end");
+      label.textContent = `${s.name} (${(weight * 100).toFixed(1)}%)`;
+      svg.appendChild(label);
+    });
+
+    // Pooled diamond row
+    const yDiamond = yForIndex(k + 0.5);
+    const xPooled = xScale(pooledY);
+    const xLow = xScale(pooledLow);
+    const xHigh = xScale(pooledHigh);
+
+    const diamond = document.createElementNS("http://www.w3.org/2000/svg", "polygon");
+    const pts = [
+      [xLow, yDiamond],
+      [xPooled, yDiamond - 6],
+      [xHigh, yDiamond],
+      [xPooled, yDiamond + 6]
+    ];
+    diamond.setAttribute(
+      "points",
+      pts.map(p => p[0].toFixed(1) + "," + p[1].toFixed(1)).join(" ")
+    );
+    diamond.setAttribute("fill", "rgba(56, 189, 248, 0.8)");
+    diamond.setAttribute("stroke", "#22d3ee");
+    diamond.setAttribute("stroke-width", "1");
+    svg.appendChild(diamond);
+
+    const pooledLabel = document.createElementNS("http://www.w3.org/2000/svg", "text");
+    pooledLabel.setAttribute("x", marginLeft - 6);
+    pooledLabel.setAttribute("y", yDiamond + 3);
+    pooledLabel.setAttribute("fill", "#e5e7eb");
+    pooledLabel.setAttribute("font-size", "8");
+    pooledLabel.setAttribute("text-anchor", "end");
+    pooledLabel.textContent =
+      selectedModel === "fixed" ? "Pooled (fixed)" : "Pooled (random)";
+    svg.appendChild(pooledLabel);
+  }
+
+  // ---------- Funnel plot / publication bias ----------
+
+  let funnelStudies = []; // { yi, se, p }
+
+  function generateFunnelStudies() {
+    funnelStudies = [];
+    const N = 50;
+    for (let i = 0; i < N; i++) {
+      // mimic varying SE (study sizes)
+      const n = Math.exp(Math.random() * (Math.log(2000) - Math.log(50)) + Math.log(50)); // log-uniform
+      const se = 1 / Math.sqrt(n); // rough relationship
+      const yi = randNormal() * se; // true logRR=0 with noise
+      const z = yi / se;
+      const p = 2 * (1 - normalCDF(Math.abs(z)));
+      funnelStudies.push({ yi, se, p });
+    }
+    renderFunnel();
+  }
+
+  function renderFunnel() {
+    const all = funnelStudies;
+    const hideBias = document.getElementById("funnelHideCheckbox").checked;
+
+    // "Publication bias": hide non-significant small studies
+    const biased = all.filter(st => {
+      if (!hideBias) return true;
+      const small = st.se > 0.25; // arbitrary “small study” cutoff
+      const nonsignificant = st.p >= 0.05;
+      if (small && nonsignificant) return false;
+      return true;
+    });
+
+    drawFunnelPlot("funnelAllSvg", all);
+    drawFunnelPlot("funnelBiasedSvg", biased);
+
+    // stats summary
+    const sigAll = all.filter(s => s.p < 0.05).length;
+    const sigBiased = biased.filter(s => s.p < 0.05).length;
+    const funnelStats = document.getElementById("funnelStatsPanel");
+    funnelStats.innerHTML = `
+      <div class="result-row">
+        <div class="result-label">All simulated studies</div>
+        <div class="result-value">
+          n = ${all.length}, p&lt;0.05 in ${sigAll} (${formatPercent(sigAll / Math.max(all.length,1))})
+        </div>
+        <div class="result-note">
+          True underlying effect is RR=1. In the long run, we expect ≈5% “significant” by chance.
+        </div>
+      </div>
+      <div class="result-row">
+        <div class="result-label">After “publication bias” filter</div>
+        <div class="result-value result-highlight">
+          n = ${biased.length}, p&lt;0.05 in ${sigBiased}
+          (${biased.length ? formatPercent(sigBiased / biased.length) : "—"})
+        </div>
+        <div class="result-note">
+          Removing non-significant small studies can inflate the apparent effect and
+          create funnel asymmetry.
+        </div>
+      </div>
+    `;
+  }
+
+  function drawFunnelPlot(svgId, studies) {
+    const svg = document.getElementById(svgId);
+    svg.innerHTML = "";
+
+    const width = 260;
+    const height = 220;
+    const marginLeft = 40;
+    const marginRight = 15;
+    const marginTop = 20;
+    const marginBottom = 30;
+    const innerW = width - marginLeft - marginRight;
+    const innerH = height - marginTop - marginBottom;
+
+    const k = studies.length;
+    if (!k) {
+      const text = document.createElementNS("http://www.w3.org/2000/svg", "text");
+      text.setAttribute("x", width / 2);
+      text.setAttribute("y", height / 2);
+      text.setAttribute("fill", "#9ca3af");
+      text.setAttribute("font-size", "10");
+      text.setAttribute("text-anchor", "middle");
+      text.textContent = "No studies";
+      svg.appendChild(text);
+      return;
+    }
+
+    // x: effect (logRR), y: SE
+    let minYi = Infinity;
+    let maxYi = -Infinity;
+    let minSe = Infinity;
+    let maxSe = -Infinity;
+
+    studies.forEach(s => {
+      if (s.yi < minYi) minYi = s.yi;
+      if (s.yi > maxYi) maxYi = s.yi;
+      if (s.se < minSe) minSe = s.se;
+      if (s.se > maxSe) maxSe = s.se;
+    });
+
+    // Ensure 0 is in effect range
+    if (minYi > 0) minYi = 0;
+    if (maxYi < 0) maxYi = 0;
+
+    if (minYi === maxYi) {
+      minYi -= 0.5;
+      maxYi += 0.5;
+    }
+    // Expand SE range a bit
+    if (minSe === maxSe) {
+      minSe = Math.max(0, minSe - 0.1);
+      maxSe = maxSe + 0.1;
+    }
+
+    const xScale = x =>
+      marginLeft + ((x - minYi) / (maxYi - minYi)) * innerW;
+
+    const yScale = se =>
+      marginTop + ((se - minSe) / (maxSe - minSe)) * innerH;
+
+    // Axes box
+    const yBottom = yScale(maxSe);
+    const yTop = yScale(minSe);
+    const xLeft = xScale(minYi);
+    const xRight = xScale(maxYi);
+
+    const box = document.createElementNS("http://www.w3.org/2000/svg", "rect");
+    box.setAttribute("x", xLeft);
+    box.setAttribute("y", yTop);
+    box.setAttribute("width", xRight - xLeft);
+    box.setAttribute("height", yBottom - yTop);
+    box.setAttribute("fill", "none");
+    box.setAttribute("stroke", "#4b5563");
+    box.setAttribute("stroke-width", "1");
+    svg.appendChild(box);
+
+    // X-axis label (RR)
+    const xAxisLabel = document.createElementNS("http://www.w3.org/2000/svg", "text");
+    xAxisLabel.setAttribute("x", (xLeft + xRight) / 2);
+    xAxisLabel.setAttribute("y", height - 4);
+    xAxisLabel.setAttribute("fill", "#9ca3af");
+    xAxisLabel.setAttribute("font-size", "9");
+    xAxisLabel.setAttribute("text-anchor", "middle");
+    xAxisLabel.textContent = "Effect (RR, log scale)";
+    svg.appendChild(xAxisLabel);
+
+    // y-axis label (SE)
+    const yAxisLabel = document.createElementNS("http://www.w3.org/2000/svg", "text");
+    yAxisLabel.setAttribute("x", marginLeft - 30);
+    yAxisLabel.setAttribute("y", (yTop + yBottom) / 2);
+    yAxisLabel.setAttribute("fill", "#9ca3af");
+    yAxisLabel.setAttribute("font-size", "9");
+    yAxisLabel.setAttribute("text-anchor", "middle");
+    yAxisLabel.setAttribute("transform", `rotate(-90 ${marginLeft - 30} ${(yTop + yBottom) / 2})`);
+    yAxisLabel.textContent = "Standard error (SE)";
+    svg.appendChild(yAxisLabel);
+
+    // X ticks: min, 0, max (RR labels)
+    const ticks = [
+      { x: minYi, label: Math.exp(minYi).toFixed(2) },
+      { x: 0, label: "1.00" },
+      { x: maxYi, label: Math.exp(maxYi).toFixed(2) }
+    ];
+    ticks.forEach(t => {
+      const xx = xScale(t.x);
+      const tick = document.createElementNS("http://www.w3.org/2000/svg", "line");
+      tick.setAttribute("x1", xx);
+      tick.setAttribute("x2", xx);
+      tick.setAttribute("y1", yBottom);
+      tick.setAttribute("y2", yBottom + 4);
+      tick.setAttribute("stroke", "#6b7280");
+      tick.setAttribute("stroke-width", "1");
+      svg.appendChild(tick);
+
+      const lbl = document.createElementNS("http://www.w3.org/2000/svg", "text");
+      lbl.setAttribute("x", xx);
+      lbl.setAttribute("y", yBottom + 12);
+      lbl.setAttribute("fill", "#9ca3af");
+      lbl.setAttribute("font-size", "8");
+      lbl.setAttribute("text-anchor", "middle");
+      lbl.textContent = t.label;
+      svg.appendChild(lbl);
+    });
+
+    // 95% CI funnel under null (effect=0)
+    const xNull = xScale(0);
+    const zCrit = 1.96;
+    const funnelLeftPath = [];
+    const funnelRightPath = [];
+    const steps = 20;
+    for (let i = 0; i <= steps; i++) {
+      const seVal = minSe + (maxSe - minSe) * (i / steps);
+      const y = yScale(seVal);
+      const xLeftSe = xScale(-zCrit * seVal);
+      const xRightSe = xScale(zCrit * seVal);
+      funnelLeftPath.push(`${i === 0 ? "M" : "L"} ${xLeftSe.toFixed(2)} ${y.toFixed(2)}`);
+      funnelRightPath.push(`${i === 0 ? "M" : "L"} ${xRightSe.toFixed(2)} ${y.toFixed(2)}`);
+    }
+
+    const leftLine = document.createElementNS("http://www.w3.org/2000/svg", "path");
+    leftLine.setAttribute("d", funnelLeftPath.join(" "));
+    leftLine.setAttribute("fill", "none");
+    leftLine.setAttribute("stroke", "#4b5563");
+    leftLine.setAttribute("stroke-width", "0.8");
+    leftLine.setAttribute("stroke-dasharray", "3 3");
+    svg.appendChild(leftLine);
+
+    const rightLine = document.createElementNS("http://www.w3.org/2000/svg", "path");
+    rightLine.setAttribute("d", funnelRightPath.join(" "));
+    rightLine.setAttribute("fill", "none");
+    rightLine.setAttribute("stroke", "#4b5563");
+    rightLine.setAttribute("stroke-width", "0.8");
+    rightLine.setAttribute("stroke-dasharray", "3 3");
+    svg.appendChild(rightLine);
+
+    // Null effect vertical line
+    const nullLine = document.createElementNS("http://www.w3.org/2000/svg", "line");
+    nullLine.setAttribute("x1", xNull);
+    nullLine.setAttribute("x2", xNull);
+    nullLine.setAttribute("y1", yTop);
+    nullLine.setAttribute("y2", yBottom);
+    nullLine.setAttribute("stroke", "#6b7280");
+    nullLine.setAttribute("stroke-width", "1");
+    nullLine.setAttribute("stroke-dasharray", "2 3");
+    svg.appendChild(nullLine);
+
+    // Points
+    studies.forEach(s => {
+      const x = xScale(s.yi);
+      const y = yScale(s.se);
+      const sig = s.p < 0.05;
+      const circle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+      circle.setAttribute("cx", x);
+      circle.setAttribute("cy", y);
+      circle.setAttribute("r", sig ? 3.2 : 2.5);
+      circle.setAttribute("fill", sig ? "#38bdf8" : "#9ca3af");
+      circle.setAttribute("stroke", sig ? "#0ea5e9" : "#6b7280");
+      circle.setAttribute("stroke-width", "0.9");
+      svg.appendChild(circle);
+    });
+  }
+
+  // ---------- Init ----------
+
+  document.addEventListener("DOMContentLoaded", () => {
+    // Meta-analysis builder
+    document.getElementById("addStudyBtn").addEventListener("click", addOrUpdateStudyFromInputs);
+    document.querySelectorAll('input[name="poolModel"]').forEach(r => {
+      r.addEventListener("change", recalcMeta);
+    });
+
+    document.getElementById("scenarioNoneBtn").addEventListener("click", () => {
+      loadScenario(createScenarioNone());
+    });
+    document.getElementById("scenarioModerateBtn").addEventListener("click", () => {
+      loadScenario(createScenarioModerate());
+    });
+    document.getElementById("scenarioExtremeBtn").addEventListener("click", () => {
+      loadScenario(createScenarioExtreme());
+    });
+
+    // Funnel / publication bias
+    document.getElementById("funnelGenerateBtn").addEventListener("click", generateFunnelStudies);
+    document.getElementById("funnelHideCheckbox").addEventListener("change", renderFunnel);
+
+    // Initial setup: load a moderate heterogeneity scenario & generate funnel
+    loadScenario(createScenarioModerate());
+    generateFunnelStudies();
+  });
+</script>
+</body>
+</html>

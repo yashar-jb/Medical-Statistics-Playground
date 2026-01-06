@@ -1,0 +1,1192 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Medical Study Design & Evidence Explorer</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    :root {
+      --bg: #0f172a;
+      --bg-elevated: #020617;
+      --card-bg: #020617;
+      --accent: #38bdf8;
+      --accent-soft: rgba(56, 189, 248, 0.15);
+      --accent-strong: #0ea5e9;
+      --text: #e5e7eb;
+      --text-muted: #9ca3af;
+      --danger: #f97373;
+      --warning: #fbbf24;
+      --success: #22c55e;
+      --radius-lg: 1.25rem;
+      --shadow-soft: 0 18px 45px rgba(15, 23, 42, 0.9);
+      --border-subtle: 1px solid rgba(148, 163, 184, 0.22);
+      --font-sans: system-ui, -apple-system, BlinkMacSystemFont, "SF Pro Text",
+                   "Segoe UI", sans-serif;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html, body {
+      margin: 0;
+      padding: 0;
+      background: radial-gradient(circle at top left, #1f2937 0, #020617 45%, #000 100%);
+      color: var(--text);
+      font-family: var(--font-sans);
+    }
+
+    body {
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: stretch;
+      padding: 24px;
+    }
+
+    .app-shell {
+      max-width: 1200px;
+      width: 100%;
+      margin: auto;
+      background: linear-gradient(145deg, rgba(15, 23, 42, 0.96), rgba(15, 23, 42, 0.92));
+      border-radius: 1.5rem;
+      box-shadow: var(--shadow-soft);
+      border: 1px solid rgba(148, 163, 184, 0.35);
+      padding: 24px 24px 28px;
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+      backdrop-filter: blur(12px);
+    }
+
+    header {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      gap: 12px;
+      align-items: center;
+    }
+
+    .title-block h1 {
+      font-size: clamp(1.6rem, 2.1vw, 1.9rem);
+      margin: 0;
+      letter-spacing: 0.02em;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .title-pill {
+      font-size: 0.8rem;
+      padding: 2px 10px;
+      border-radius: 999px;
+      border: 1px solid rgba(148, 163, 184, 0.4);
+      color: var(--text-muted);
+    }
+
+    .subtitle {
+      font-size: 0.9rem;
+      color: var(--text-muted);
+      margin-top: 4px;
+      max-width: 620px;
+    }
+
+    .tagline {
+      font-size: 0.78rem;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      color: var(--accent);
+      background: rgba(56, 189, 248, 0.1);
+      border-radius: 999px;
+      padding: 4px 12px;
+      border: 1px solid rgba(56, 189, 248, 0.35);
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .tagline-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 999px;
+      background: var(--accent);
+      box-shadow: 0 0 10px rgba(56, 189, 248, 0.85);
+    }
+
+    main {
+      display: grid;
+      grid-template-columns: minmax(0, 1.1fr) minmax(0, 1.3fr);
+      gap: 18px;
+    }
+
+    @media (max-width: 900px) {
+      body {
+        padding: 12px;
+      }
+      .app-shell {
+        padding: 18px 16px 22px;
+        border-radius: 1.1rem;
+      }
+      main {
+        grid-template-columns: minmax(0, 1fr);
+      }
+    }
+
+    h2 {
+      margin: 0 0 10px;
+      font-size: 1.1rem;
+      letter-spacing: 0.02em;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 6px;
+    }
+
+    h2 span.label {
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      color: var(--text-muted);
+    }
+
+    .card {
+      background: radial-gradient(circle at top right,
+          rgba(56, 189, 248, 0.06) 0,
+          rgba(15, 23, 42, 0.98) 40%,
+          #020617 100%);
+      border-radius: var(--radius-lg);
+      border: var(--border-subtle);
+      padding: 14px 16px 16px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .card::before {
+      content: "";
+      position: absolute;
+      inset: -120px;
+      background-image: radial-gradient(circle at 0 -40px,
+        rgba(56, 189, 248, 0.12),
+        transparent 60%);
+      opacity: 0.7;
+      pointer-events: none;
+    }
+
+    .card-inner {
+      position: relative;
+      z-index: 1;
+    }
+
+    /* Evidence Pyramid */
+
+    .pyramid-container {
+      display: grid;
+      grid-template-rows: auto auto;
+      gap: 12px;
+    }
+
+    .pyramid-levels {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+      margin-top: 2px;
+    }
+
+    .pyramid-level {
+      position: relative;
+      border: 1px solid rgba(148, 163, 184, 0.45);
+      border-radius: 999px;
+      padding: 6px 14px;
+      font-size: 0.85rem;
+      text-transform: uppercase;
+      letter-spacing: 0.09em;
+      color: var(--text-muted);
+      background: linear-gradient(135deg, rgba(15, 23, 42, 0.9), rgba(15, 23, 42, 0.96));
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition:
+        background 0.16s ease,
+        transform 0.1s ease,
+        border-color 0.16s ease,
+        color 0.16s ease,
+        box-shadow 0.16s ease;
+      backdrop-filter: blur(6px);
+    }
+
+    .pyramid-level span.tier-label {
+      opacity: 0.9;
+    }
+
+    .pyramid-level .tier-number {
+      font-size: 0.7rem;
+      opacity: 0.85;
+      margin-inline-end: 6px;
+      color: var(--text-muted);
+    }
+
+    .pyramid-level:nth-child(1) { width: 55%; }
+    .pyramid-level:nth-child(2) { width: 62%; }
+    .pyramid-level:nth-child(3) { width: 70%; }
+    .pyramid-level:nth-child(4) { width: 78%; }
+    .pyramid-level:nth-child(5) { width: 86%; }
+    .pyramid-level:nth-child(6) { width: 94%; }
+    .pyramid-level:nth-child(7) { width: 100%; }
+
+    .pyramid-level:hover {
+      border-color: rgba(56, 189, 248, 0.9);
+      color: var(--accent-strong);
+      transform: translateY(-1px);
+      box-shadow: 0 8px 16px rgba(15, 23, 42, 0.7);
+    }
+
+    .pyramid-level.active {
+      background: radial-gradient(circle at top,
+          rgba(56, 189, 248, 0.2),
+          rgba(15, 23, 42, 0.98));
+      border-color: rgba(56, 189, 248, 0.95);
+      color: var(--accent-strong);
+      box-shadow: 0 12px 28px rgba(15, 23, 42, 0.95);
+    }
+
+    .pyramid-label {
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.14em;
+      color: var(--text-muted);
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      margin-top: 4px;
+    }
+
+    .pyramid-label-line {
+      flex: 1;
+      height: 1px;
+      background: linear-gradient(to right, rgba(148, 163, 184, 0.5), transparent);
+    }
+
+    .pyramid-details {
+      margin-top: 2px;
+      border-radius: 1rem;
+      border: 1px solid rgba(148, 163, 184, 0.45);
+      background: rgba(15, 23, 42, 0.9);
+      padding: 10px 11px 11px;
+      display: grid;
+      grid-template-columns: minmax(0, 1.1fr) minmax(0, 1.1fr);
+      gap: 8px 14px;
+      font-size: 0.83rem;
+    }
+
+    @media (max-width: 700px) {
+      .pyramid-details {
+        grid-template-columns: minmax(0, 1fr);
+      }
+    }
+
+    .pyramid-details-header {
+      grid-column: 1 / -1;
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      gap: 10px;
+    }
+
+    .pyramid-level-name {
+      font-size: 0.94rem;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .pill {
+      font-size: 0.7rem;
+      padding: 2px 8px;
+      border-radius: 999px;
+      background: rgba(15, 23, 42, 0.95);
+      border: 1px solid rgba(148, 163, 184, 0.65);
+      color: var(--text-muted);
+    }
+
+    .pill-strong {
+      border-color: rgba(56, 189, 248, 0.9);
+      color: var(--accent);
+      background: rgba(8, 47, 73, 0.9);
+    }
+
+    .pyramid-section {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .pyramid-section-title {
+      font-size: 0.78rem;
+      text-transform: uppercase;
+      letter-spacing: 0.14em;
+      color: var(--text-muted);
+    }
+
+    .pyramid-section-body {
+      color: #e5e7eb;
+      line-height: 1.5;
+    }
+
+    .badge-soft {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      font-size: 0.74rem;
+      padding: 2px 6px;
+      border-radius: 999px;
+      background: rgba(148, 163, 184, 0.12);
+      border: 1px solid rgba(148, 163, 184, 0.5);
+      color: var(--text-muted);
+    }
+
+    .badge-dot {
+      width: 5px;
+      height: 5px;
+      border-radius: 999px;
+      background: currentColor;
+    }
+
+    ul.compact-list {
+      margin: 0;
+      padding-left: 1.15rem;
+    }
+
+    ul.compact-list li {
+      margin: 0;
+      padding: 0;
+    }
+
+    /* Study Design Comparator */
+
+    .comparator-header {
+      display: flex;
+      justify-content: space-between;
+      gap: 8px;
+      align-items: baseline;
+      margin-bottom: 8px;
+    }
+
+    .scenario-text {
+      font-size: 0.83rem;
+      color: var(--text-muted);
+    }
+
+    .scenario-highlight {
+      color: var(--accent);
+    }
+
+    .design-buttons {
+      display: inline-flex;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+
+    .design-btn {
+      font-size: 0.78rem;
+      text-transform: uppercase;
+      letter-spacing: 0.13em;
+      padding: 4px 9px;
+      border-radius: 999px;
+      border: 1px solid rgba(148, 163, 184, 0.5);
+      background: rgba(15, 23, 42, 0.95);
+      color: var(--text-muted);
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition:
+        background 0.16s ease,
+        color 0.16s ease,
+        border-color 0.16s ease,
+        transform 0.1s ease;
+    }
+
+    .design-btn span.badge {
+      font-size: 0.7rem;
+      padding: 2px 5px;
+      border-radius: 999px;
+      border: 1px solid rgba(148, 163, 184, 0.6);
+      background: rgba(15, 23, 42, 1);
+      color: var(--text-muted);
+    }
+
+    .design-btn:hover {
+      border-color: rgba(56, 189, 248, 0.9);
+      color: var(--accent-strong);
+      transform: translateY(-1px);
+    }
+
+    .design-btn.active {
+      border-color: rgba(56, 189, 248, 0.95);
+      background: radial-gradient(circle at top,
+          rgba(56, 189, 248, 0.18),
+          rgba(15, 23, 42, 0.98));
+      color: var(--accent-strong);
+    }
+
+    .design-layout {
+      display: grid;
+      grid-template-columns: minmax(0, 1.1fr) minmax(0, 1.25fr);
+      gap: 12px;
+    }
+
+    @media (max-width: 900px) {
+      .design-layout {
+        grid-template-columns: minmax(0, 1fr);
+      }
+    }
+
+    .diagram-card {
+      border-radius: 1rem;
+      border: 1px solid rgba(148, 163, 184, 0.45);
+      background: linear-gradient(145deg,
+          rgba(15, 23, 42, 0.98),
+          rgba(8, 47, 73, 0.8));
+      padding: 10px 11px 11px;
+      font-size: 0.8rem;
+    }
+
+    .diagram-title {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      gap: 12px;
+      margin-bottom: 6px;
+    }
+
+    .diagram-title-main {
+      font-weight: 600;
+      font-size: 0.9rem;
+    }
+
+    .diagram-title-sub {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+    }
+
+    .diagram-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 6px;
+      margin-top: 2px;
+    }
+
+    .diagram-node {
+      border-radius: 0.9rem;
+      border: 1px solid rgba(148, 163, 184, 0.7);
+      padding: 6px 7px;
+      background: rgba(15, 23, 42, 0.95);
+      min-height: 46px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      gap: 2px;
+    }
+
+    .diagram-node-label {
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      color: var(--text-muted);
+    }
+
+    .diagram-node-main {
+      font-size: 0.8rem;
+      font-weight: 500;
+    }
+
+    .diagram-arrow {
+      font-size: 1.1rem;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      color: var(--accent);
+    }
+
+    .diagram-tag {
+      border-radius: 999px;
+      padding: 1px 6px;
+      font-size: 0.72rem;
+      border: 1px solid rgba(148, 163, 184, 0.75);
+      background: rgba(15, 23, 42, 1);
+      color: var(--text-muted);
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .diagram-tag-dot {
+      width: 5px;
+      height: 5px;
+      border-radius: 999px;
+      background: var(--warning);
+      box-shadow: 0 0 10px rgba(234, 179, 8, 0.7);
+    }
+
+    .diagram-footnote {
+      margin-top: 8px;
+      font-size: 0.7rem;
+      color: var(--text-muted);
+    }
+
+    .diagram-footnote span {
+      color: var(--accent);
+    }
+
+    .design-text-card {
+      border-radius: 1rem;
+      border: 1px solid rgba(148, 163, 184, 0.45);
+      background: rgba(15, 23, 42, 0.98);
+      padding: 9px 11px 11px;
+      font-size: 0.83rem;
+      display: grid;
+      grid-template-columns: minmax(0, 1fr);
+      gap: 6px;
+    }
+
+    .design-section {
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+    }
+
+    .design-section-title {
+      font-size: 0.78rem;
+      text-transform: uppercase;
+      letter-spacing: 0.14em;
+      color: var(--text-muted);
+    }
+
+    .design-section-body {
+      line-height: 1.5;
+    }
+
+    .badge-outcome {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      font-size: 0.74rem;
+      padding: 2px 7px;
+      border-radius: 999px;
+      background: rgba(8, 47, 73, 0.9);
+      border: 1px solid rgba(56, 189, 248, 0.8);
+      color: var(--accent);
+    }
+
+    .badge-outcome .badge-dot {
+      background: var(--accent);
+      box-shadow: 0 0 8px rgba(56, 189, 248, 0.9);
+    }
+
+    .badge-limit {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      font-size: 0.74rem;
+      padding: 2px 7px;
+      border-radius: 999px;
+      background: rgba(127, 29, 29, 0.8);
+      border: 1px solid rgba(248, 113, 113, 0.9);
+      color: #fecaca;
+    }
+
+    footer {
+      margin-top: 8px;
+      font-size: 0.72rem;
+      color: var(--text-muted);
+      display: flex;
+      justify-content: space-between;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+  </style>
+</head>
+<body>
+<div class="app-shell">
+  <header>
+    <div class="title-block">
+      <h1>
+        Study Design & Evidence Explorer
+        <span class="title-pill">EBM live demo · offline</span>
+      </h1>
+      <div class="subtitle">
+        Click through the evidence pyramid and compare study designs.
+        Use this as a visual aid while you explain how we should judge
+        the strength of medical research.
+      </div>
+    </div>
+    <div class="tagline">
+      <span class="tagline-dot"></span>
+      Interactive teaching aid
+    </div>
+  </header>
+
+  <main>
+    <!-- Evidence Pyramid -->
+    <section class="card">
+      <div class="card-inner pyramid-container">
+        <div>
+          <h2>
+            Evidence Pyramid
+            <span class="label">From weakest to strongest</span>
+          </h2>
+          <div class="pyramid-label">
+            <span>Click a level to inspect it</span>
+            <span class="pyramid-label-line"></span>
+          </div>
+        </div>
+
+        <div class="pyramid-levels" id="pyramidLevels">
+          <!-- Order: top (strongest) to bottom (weakest) -->
+          <button class="pyramid-level" data-id="meta-analysis">
+            <span class="tier-number">Tier 1</span>
+            <span class="tier-label">Systematic review &amp; meta-analysis</span>
+          </button>
+          <button class="pyramid-level" data-id="systematic-review">
+            <span class="tier-number">Tier 2</span>
+            <span class="tier-label">Systematic review (qualitative)</span>
+          </button>
+          <button class="pyramid-level" data-id="rct">
+            <span class="tier-number">Tier 3</span>
+            <span class="tier-label">Randomized controlled trial</span>
+          </button>
+          <button class="pyramid-level" data-id="cohort">
+            <span class="tier-number">Tier 4</span>
+            <span class="tier-label">Cohort study</span>
+          </button>
+          <button class="pyramid-level" data-id="case-control">
+            <span class="tier-number">Tier 5</span>
+            <span class="tier-label">Case–control study</span>
+          </button>
+          <button class="pyramid-level" data-id="case-series">
+            <span class="tier-number">Tier 6</span>
+            <span class="tier-label">Case series</span>
+          </button>
+          <button class="pyramid-level" data-id="case-report">
+            <span class="tier-number">Tier 7</span>
+            <span class="tier-label">Single case report</span>
+          </button>
+        </div>
+
+        <div class="pyramid-details" id="pyramidDetails">
+          <!-- Filled dynamically by JS -->
+        </div>
+      </div>
+    </section>
+
+    <!-- Study Design Comparator -->
+    <section class="card">
+      <div class="card-inner">
+        <div class="comparator-header">
+          <h2>
+            Study Design Comparator
+            <span class="label">Direction of inquiry &amp; bias</span>
+          </h2>
+        </div>
+        <div class="scenario-text">
+          Clinical question:
+          <span class="scenario-highlight">
+            “Does Drug X reduce the risk of myocardial infarction over 5 years?”
+          </span>
+        </div>
+
+        <div style="margin-top:10px; margin-bottom:8px; display:flex; justify-content:space-between; gap:8px; align-items:center; flex-wrap:wrap;">
+          <div style="font-size:0.78rem; color:var(--text-muted);">
+            Choose a design to see how the same question is approached:
+          </div>
+          <div class="design-buttons" id="designButtons">
+            <button class="design-btn" data-id="case-control">
+              <span>Case–control</span>
+              <span class="badge">Outcome ➜ Past exposure</span>
+            </button>
+            <button class="design-btn" data-id="cohort">
+              <span>Cohort</span>
+              <span class="badge">Exposure ➜ Future outcome</span>
+            </button>
+            <button class="design-btn" data-id="rct">
+              <span>Randomized trial</span>
+              <span class="badge">Randomized exposure</span>
+            </button>
+          </div>
+        </div>
+
+        <div class="design-layout">
+          <div class="diagram-card" id="diagramPanel">
+            <!-- Filled dynamically -->
+          </div>
+          <div class="design-text-card" id="designTextPanel">
+            <!-- Filled dynamically -->
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <div>
+      Tip: ask the audience which design they think is “best” for the question,
+      then click to reveal strengths &amp; limitations.
+    </div>
+    <div>
+      All calculations &amp; visuals run client-side in your browser · no internet needed.
+    </div>
+  </footer>
+</div>
+
+<script>
+  // ---------- DATA DEFINITIONS ----------
+
+  const evidenceLevels = {
+    "case-report": {
+      name: "Single case report",
+      tier: "Tier 7 · Weakest evidence",
+      typicalQuestions: [
+        "Can this rare or unusual clinical presentation happen?",
+        "Could this adverse effect be related to a drug or intervention?"
+      ],
+      biases: [
+        "Extreme selection bias (1 patient, usually memorable/unusual).",
+        "No comparator group; cannot estimate frequency or effect sizes.",
+        "Strong risk of anecdotal over-interpretation."
+      ],
+      measures: [
+        "No formal measures of effect.",
+        "Descriptive clinical narrative, maybe timelines and images."
+      ],
+      notes: [
+        "Useful for hypothesis generation and early signal detection.",
+        "Should never drive major changes in practice on its own."
+      ]
+    },
+    "case-series": {
+      name: "Case series",
+      tier: "Tier 6",
+      typicalQuestions: [
+        "Are we seeing a pattern of similar cases?",
+        "What are common features and short-term outcomes in these patients?"
+      ],
+      biases: [
+        "No control group; cannot quantify relative risk.",
+        "Often convenience samples from a single center.",
+        "Confounding and selection bias are uncontrolled."
+      ],
+      measures: [
+        "Proportions, medians, and descriptive statistics.",
+        "Sometimes crude event rates without comparison."
+      ],
+      notes: [
+        "Useful for describing emerging syndromes or complications.",
+        "Still primarily hypothesis-generating, not practice-changing."
+      ]
+    },
+    "case-control": {
+      name: "Case–control study",
+      tier: "Tier 5",
+      typicalQuestions: [
+        "Is prior exposure X associated with having outcome Y?",
+        "What risk factors are more common in cases than controls?"
+      ],
+      biases: [
+        "Selection of controls may not represent the source population.",
+        "Recall and measurement bias in assessing past exposures.",
+        "Cannot directly estimate incidence or risk."
+      ],
+      measures: [
+        "Odds ratio (OR) comparing odds of exposure in cases vs controls.",
+        "Adjusted ORs from logistic regression for multiple confounders."
+      ],
+      notes: [
+        "Efficient for rare outcomes or long latency diseases.",
+        "Association ≠ causation; direction of time is outcome ➜ past exposure."
+      ]
+    },
+    "cohort": {
+      name: "Cohort study",
+      tier: "Tier 4",
+      typicalQuestions: [
+        "Does exposure X change the incidence of outcome Y over time?",
+        "What is the prognosis of patients with a given condition?"
+      ],
+      biases: [
+        "Confounding by indication and baseline differences.",
+        "Loss to follow-up and informative censoring.",
+        "Measurement differences between exposed and unexposed groups."
+      ],
+      measures: [
+        "Risk ratio (RR) or rate ratio (incidence rates).",
+        "Hazard ratio (HR) from survival analysis.",
+        "Absolute risk difference and number needed to treat/harm (NNT/NNH)."
+      ],
+      notes: [
+        "Direction is exposure ➜ outcome, supporting stronger causal inference.",
+        "Prospective designs reduce some biases but cannot fully remove confounding."
+      ]
+    },
+    "rct": {
+      name: "Randomized controlled trial (RCT)",
+      tier: "Tier 3",
+      typicalQuestions: [
+        "Does intervention X cause a change in outcome Y compared with control?",
+        "Is new treatment non-inferior or superior to standard of care?"
+      ],
+      biases: [
+        "Randomization balances known and unknown confounders, but:",
+        "Performance and detection bias if blinding is inadequate.",
+        "Attrition bias if loss to follow-up is unequal or high."
+      ],
+      measures: [
+        "Risk ratios, risk differences, and hazard ratios.",
+        "Pre-specified primary outcome with confidence intervals.",
+        "Intention-to-treat vs per-protocol analyses."
+      ],
+      notes: [
+        "Gold standard for estimating causal effects of interventions.",
+        "Internal validity is high; external validity depends on eligibility criteria."
+      ]
+    },
+    "systematic-review": {
+      name: "Systematic review (qualitative synthesis)",
+      tier: "Tier 2",
+      typicalQuestions: [
+        "What does the totality of evidence show across multiple studies?",
+        "How consistent are results across settings and populations?"
+      ],
+      biases: [
+        "Publication bias and selective reporting of positive trials.",
+        "Heterogeneity in study designs, populations, and outcomes.",
+        "Quality of conclusions limited by quality of included studies."
+      ],
+      measures: [
+        "Structured risk-of-bias assessment for each study.",
+        "Narrative synthesis of findings when pooling is inappropriate."
+      ],
+      notes: [
+        "Transparent search strategy and pre-specified protocol are key.",
+        "Can downgrade overall certainty of evidence (e.g., GRADE) for bias, inconsistency, or imprecision."
+      ]
+    },
+    "meta-analysis": {
+      name: "Systematic review with meta-analysis",
+      tier: "Tier 1 · Strongest evidence",
+      typicalQuestions: [
+        "What is the best pooled estimate of effect for intervention X vs comparator?",
+        "Is the effect consistent across subgroups and study designs?"
+      ],
+      biases: [
+        "Publication and small-study bias can distort pooled estimates.",
+        "Model choice (fixed vs random effects) and handling of heterogeneity.",
+        "Garbage in, garbage out: relies on underlying study quality."
+      ],
+      measures: [
+        "Pooled effect sizes (RR, OR, HR, mean difference, standardized mean difference).",
+        "Heterogeneity statistics (I², τ², Q test).",
+        "Funnel plots and sensitivity analyses."
+      ],
+      notes: [
+        "Sits at the top of the hierarchy when done rigorously.",
+        "Powerful tool for decision-making but should not override clinical context and patient values."
+      ]
+    }
+  };
+
+  const studyDesigns = {
+    "case-control": {
+      id: "case-control",
+      title: "Case–control study",
+      questionType: "Etiology / risk factors for disease.",
+      direction: "Start with outcome status, then look backwards to prior exposure.",
+      canConclude: [
+        "Estimate strength of association between exposure and outcome (odds ratio).",
+        "Generate causal hypotheses when randomized trials are not feasible."
+      ],
+      cannotConclude: [
+        "Cannot directly estimate incidence or absolute risk.",
+        "Causal inference is limited by recall bias, selection bias, and residual confounding."
+      ],
+      confounding: "Major vulnerability: selection of appropriate controls and accurate measurement of past exposures.",
+      whatWeEstimate: "Odds ratio (crude and adjusted) comparing odds of exposure among MI cases vs controls.",
+      diagram: {
+        leftLabel: "Outcome",
+        leftMain: "MI cases\n(non-fatal MI)",
+        arrow1: "Look backwards",
+        midLabel: "Sampling",
+        midMain: "Select cases &\nmatched controls",
+        arrow2: "Compare past",
+        rightLabel: "Exposure",
+        rightMain: "Prior Drug X\nuse vs no use",
+        hotspot: "Controls must represent the same source population that produced the cases."
+      }
+    },
+    "cohort": {
+      id: "cohort",
+      title: "Cohort study",
+      questionType: "Incidence, prognosis & effect of exposures over time.",
+      direction: "Start with exposure status, follow forward to observe outcomes.",
+      canConclude: [
+        "Estimate absolute risks and risk ratios for MI with and without Drug X.",
+        "Describe time-to-event using survival curves and hazard ratios."
+      ],
+      cannotConclude: [
+        "Causality can still be distorted by confounding by indication.",
+        "Unmeasured confounders and treatment-channeling cannot be fully excluded."
+      ],
+      confounding: "Confounding by indication (sicker or higher-risk patients more/less likely to receive Drug X) is a key concern.",
+      whatWeEstimate: "Risk ratio, risk difference, and hazard ratio for MI comparing Drug X vs no Drug X.",
+      diagram: {
+        leftLabel: "Exposure",
+        leftMain: "Drug X users\nvs non-users",
+        arrow1: "Follow-up",
+        midLabel: "Time",
+        midMain: "5-year\nobservation",
+        arrow2: "Incidence",
+        rightLabel: "Outcome",
+        rightMain: "MI events &\nno events",
+        hotspot: "Baseline differences (age, risk factors) must be adjusted in the analysis."
+      }
+    },
+    "rct": {
+      id: "rct",
+      title: "Randomized controlled trial",
+      questionType: "Causal effect of an intervention on clinical outcomes.",
+      direction: "Randomly assign exposure, then follow participants for outcomes.",
+      canConclude: [
+        "Estimate causal effect of Drug X on MI risk, assuming randomization and adherence are adequate.",
+        "Support guideline-level treatment recommendations when trial quality is high."
+      ],
+      cannotConclude: [
+        "External validity may be limited by strict inclusion criteria.",
+        "Long-term safety or rare harms may not be fully captured."
+      ],
+      confounding: "Randomization aims to balance both known and unknown confounders at baseline.",
+      whatWeEstimate: "Risk difference, relative risk, and hazard ratio for MI in Drug X vs placebo/standard care.",
+      diagram: {
+        leftLabel: "Population",
+        leftMain: "Eligible patients\n(no prior MI)",
+        arrow1: "Randomize",
+        midLabel: "Randomization",
+        midMain: "Drug X\nvs Control",
+        arrow2: "Follow-up",
+        rightLabel: "Outcome",
+        rightMain: "MI events &\nno events",
+        hotspot: "If randomization and blinding are robust, confounding is minimized."
+      }
+    }
+  };
+
+  // ---------- DOM HELPERS ----------
+
+  function htmlEscape(str) {
+    return str
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;");
+  }
+
+  function renderList(items) {
+    return `
+      <ul class="compact-list">
+        ${items.map(item => `<li>${item}</li>`).join("")}
+      </ul>
+    `;
+  }
+
+  // ---------- EVIDENCE PYRAMID RENDERING ----------
+
+  function renderPyramidDetails(levelId) {
+    const container = document.getElementById("pyramidDetails");
+    const data = evidenceLevels[levelId] || evidenceLevels["rct"];
+
+    container.innerHTML = `
+      <div class="pyramid-details-header">
+        <div class="pyramid-level-name">
+          ${data.name}
+          <span class="pill pill-strong">${data.tier}</span>
+        </div>
+        <div class="badge-soft">
+          <span class="badge-dot"></span>
+          <span>Use this to explain where this design sits in the hierarchy.</span>
+        </div>
+      </div>
+
+      <div class="pyramid-section">
+        <div class="pyramid-section-title">Typical questions</div>
+        <div class="pyramid-section-body">
+          ${renderList(data.typicalQuestions)}
+        </div>
+      </div>
+
+      <div class="pyramid-section">
+        <div class="pyramid-section-title">Main sources of bias</div>
+        <div class="pyramid-section-body">
+          ${renderList(data.biases)}
+        </div>
+      </div>
+
+      <div class="pyramid-section">
+        <div class="pyramid-section-title">Common effect measures</div>
+        <div class="pyramid-section-body">
+          ${renderList(data.measures)}
+        </div>
+      </div>
+
+      <div class="pyramid-section">
+        <div class="pyramid-section-title">How to interpret this level in practice</div>
+        <div class="pyramid-section-body">
+          ${renderList(data.notes)}
+        </div>
+      </div>
+    `;
+  }
+
+  function setupPyramidLevelInteractions() {
+    const buttons = Array.from(document.querySelectorAll(".pyramid-levels .pyramid-level"));
+    buttons.forEach(btn => {
+      btn.addEventListener("click", () => {
+        buttons.forEach(b => b.classList.remove("active"));
+        btn.classList.add("active");
+        const id = btn.getAttribute("data-id");
+        renderPyramidDetails(id);
+      });
+    });
+
+    // Set a sensible default: RCT or meta-analysis
+    const defaultId = "rct";
+    const defaultBtn = buttons.find(b => b.getAttribute("data-id") === defaultId) || buttons[0];
+    if (defaultBtn) {
+      defaultBtn.click();
+    }
+  }
+
+  // ---------- STUDY DESIGN COMPARATOR RENDERING ----------
+
+  function renderDesignDiagram(designId) {
+    const panel = document.getElementById("diagramPanel");
+    const data = studyDesigns[designId] || studyDesigns["rct"];
+    const d = data.diagram;
+
+    panel.innerHTML = `
+      <div class="diagram-title">
+        <div class="diagram-title-main">${data.title}</div>
+        <div class="diagram-title-sub">${htmlEscape(data.questionType)}</div>
+      </div>
+
+      <div class="diagram-grid">
+        <div class="diagram-node">
+          <div class="diagram-node-label">${htmlEscape(d.leftLabel)}</div>
+          <div class="diagram-node-main">${htmlEscape(d.leftMain)}</div>
+        </div>
+        <div class="diagram-arrow">
+          ➜
+        </div>
+        <div class="diagram-node">
+          <div class="diagram-node-label">${htmlEscape(d.rightLabel)}</div>
+          <div class="diagram-node-main">${htmlEscape(d.rightMain)}</div>
+        </div>
+        <div class="diagram-node">
+          <div class="diagram-node-label">${htmlEscape(d.midLabel)}</div>
+          <div class="diagram-node-main">${htmlEscape(d.midMain)}</div>
+        </div>
+        <div class="diagram-arrow">
+          ⇅
+        </div>
+        <div class="diagram-node">
+          <div class="diagram-node-label">Direction of inquiry</div>
+          <div class="diagram-node-main">
+            ${htmlEscape(d.arrow1)}<br/>
+            ${htmlEscape(d.arrow2)}
+          </div>
+        </div>
+      </div>
+
+      <div class="diagram-footnote">
+        <span class="diagram-tag">
+          <span class="diagram-tag-dot"></span>
+          Likely confounding hotspot
+        </span>
+        &nbsp;&nbsp;${htmlEscape(d.hotspot)}
+      </div>
+    `;
+  }
+
+  function renderDesignText(designId) {
+    const panel = document.getElementById("designTextPanel");
+    const data = studyDesigns[designId] || studyDesigns["rct"];
+
+    panel.innerHTML = `
+      <div class="design-section">
+        <div class="design-section-title">What this design estimates</div>
+        <div class="design-section-body">
+          <span class="badge-outcome">
+            <span class="badge-dot"></span>
+            Target estimate
+          </span>
+          &nbsp;${data.whatWeEstimate}
+        </div>
+      </div>
+
+      <div class="design-section">
+        <div class="design-section-title">Direction of time &amp; confounding</div>
+        <div class="design-section-body">
+          <strong>Direction:</strong> ${data.direction}<br/>
+          <strong>Key confounding issue:</strong> ${data.confounding}
+        </div>
+      </div>
+
+      <div class="design-section">
+        <div class="design-section-title">You can reasonably conclude</div>
+        <div class="design-section-body">
+          ${renderList(data.canConclude)}
+        </div>
+      </div>
+
+      <div class="design-section">
+        <div class="design-section-title">You cannot safely conclude</div>
+        <div class="design-section-body">
+          <span class="badge-limit">
+            ⚠ Limits to inference
+          </span>
+          ${renderList(data.cannotConclude)}
+        </div>
+      </div>
+    `;
+  }
+
+  function setupDesignButtons() {
+    const buttons = Array.from(document.querySelectorAll("#designButtons .design-btn"));
+    buttons.forEach(btn => {
+      btn.addEventListener("click", () => {
+        buttons.forEach(b => b.classList.remove("active"));
+        btn.classList.add("active");
+        const id = btn.getAttribute("data-id");
+        renderDesignDiagram(id);
+        renderDesignText(id);
+      });
+    });
+
+    // Default: RCT
+    const defaultId = "rct";
+    const defaultBtn = buttons.find(b => b.getAttribute("data-id") === defaultId) || buttons[0];
+    if (defaultBtn) {
+      defaultBtn.click();
+    }
+  }
+
+  // ---------- INIT ----------
+
+  document.addEventListener("DOMContentLoaded", () => {
+    setupPyramidLevelInteractions();
+    setupDesignButtons();
+  });
+</script>
+</body>
+</html>

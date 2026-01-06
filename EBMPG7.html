@@ -1,0 +1,1082 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Risk of Bias & GRADE Playground</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    :root {
+      --bg: #0f172a;
+      --bg-elevated: #020617;
+      --card-bg: #020617;
+      --accent: #38bdf8;
+      --accent-soft: rgba(56, 189, 248, 0.15);
+      --accent-strong: #0ea5e9;
+      --text: #e5e7eb;
+      --text-muted: #9ca3af;
+      --danger: #f97373;
+      --warning: #fbbf24;
+      --success: #22c55e;
+      --radius-lg: 1.25rem;
+      --shadow-soft: 0 18px 45px rgba(15, 23, 42, 0.9);
+      --border-subtle: 1px solid rgba(148, 163, 184, 0.22);
+      --font-sans: system-ui, -apple-system, BlinkMacSystemFont, "SF Pro Text",
+                   "Segoe UI", sans-serif;
+    }
+
+    * { box-sizing: border-box; }
+
+    html, body {
+      margin: 0;
+      padding: 0;
+      background: radial-gradient(circle at top left, #1f2937 0, #020617 45%, #000 100%);
+      color: var(--text);
+      font-family: var(--font-sans);
+    }
+
+    body {
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: stretch;
+      padding: 24px;
+    }
+
+    .app-shell {
+      max-width: 1200px;
+      width: 100%;
+      margin: auto;
+      background: linear-gradient(145deg, rgba(15, 23, 42, 0.96), rgba(15, 23, 42, 0.92));
+      border-radius: 1.5rem;
+      box-shadow: var(--shadow-soft);
+      border: 1px solid rgba(148, 163, 184, 0.35);
+      padding: 24px 24px 28px;
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+      backdrop-filter: blur(12px);
+    }
+
+    @media (max-width: 900px) {
+      body { padding: 12px; }
+      .app-shell {
+        padding: 18px 14px 22px;
+        border-radius: 1.1rem;
+      }
+    }
+
+    header {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      gap: 12px;
+      align-items: flex-start;
+    }
+
+    .title-block h1 {
+      font-size: clamp(1.6rem, 2.1vw, 1.9rem);
+      margin: 0;
+      letter-spacing: 0.02em;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .title-pill {
+      font-size: 0.8rem;
+      padding: 2px 10px;
+      border-radius: 999px;
+      border: 1px solid rgba(148, 163, 184, 0.4);
+      color: var(--text-muted);
+    }
+
+    .subtitle {
+      font-size: 0.9rem;
+      color: var(--text-muted);
+      margin-top: 4px;
+      max-width: 780px;
+    }
+
+    .tagline {
+      font-size: 0.78rem;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      color: var(--accent);
+      background: rgba(56, 189, 248, 0.1);
+      border-radius: 999px;
+      padding: 4px 12px;
+      border: 1px solid rgba(56, 189, 248, 0.35);
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .tagline-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 999px;
+      background: var(--accent);
+      box-shadow: 0 0 10px rgba(56, 189, 248, 0.85);
+    }
+
+    h2 {
+      margin: 0 0 10px;
+      font-size: 1.08rem;
+      letter-spacing: 0.02em;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 6px;
+    }
+
+    h2 span.label {
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.14em;
+      color: var(--text-muted);
+    }
+
+    main {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .card {
+      background: radial-gradient(circle at top right,
+          rgba(56, 189, 248, 0.08) 0,
+          rgba(15, 23, 42, 0.98) 40%,
+          #020617 100%);
+      border-radius: var(--radius-lg);
+      border: var(--border-subtle);
+      padding: 14px 16px 16px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .card::before {
+      content: "";
+      position: absolute;
+      inset: -120px;
+      background-image: radial-gradient(circle at 0 -40px,
+        rgba(56, 189, 248, 0.12),
+        transparent 60%);
+      opacity: 0.7;
+      pointer-events: none;
+    }
+
+    .card-inner {
+      position: relative;
+      z-index: 1;
+    }
+
+    .row-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1.25fr) minmax(0, 1.1fr);
+      gap: 16px;
+    }
+
+    @media (max-width: 1000px) {
+      .row-grid {
+        grid-template-columns: minmax(0, 1fr);
+      }
+    }
+
+    .grid-2col {
+      display: grid;
+      grid-template-columns: minmax(0, 1.15fr) minmax(0, 1.25fr);
+      gap: 12px;
+    }
+
+    @media (max-width: 900px) {
+      .grid-2col {
+        grid-template-columns: minmax(0, 1fr);
+      }
+    }
+
+    .hint {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      margin-bottom: 6px;
+    }
+
+    .inputs-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr);
+      gap: 8px 12px;
+      margin-bottom: 6px;
+    }
+
+    .input-group {
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+      font-size: 0.82rem;
+    }
+
+    .input-label {
+      font-size: 0.78rem;
+      text-transform: uppercase;
+      letter-spacing: 0.14em;
+      color: var(--text-muted);
+    }
+
+    .input-sub {
+      font-size: 0.72rem;
+      color: var(--text-muted);
+    }
+
+    select {
+      width: 100%;
+      padding: 4px 6px;
+      border-radius: 0.5rem;
+      border: 1px solid rgba(148, 163, 184, 0.6);
+      background: rgba(15, 23, 42, 0.98);
+      color: var(--text);
+      font-size: 0.83rem;
+    }
+
+    select:focus {
+      outline: none;
+      border-color: rgba(56, 189, 248, 0.9);
+      box-shadow: 0 0 0 1px rgba(56, 189, 248, 0.4);
+    }
+
+    button {
+      font-size: 0.8rem;
+      text-transform: uppercase;
+      letter-spacing: 0.14em;
+      border-radius: 999px;
+      padding: 5px 12px;
+      border: 1px solid rgba(56, 189, 248, 0.9);
+      background: radial-gradient(circle at top left,
+          rgba(56, 189, 248, 0.3),
+          rgba(15, 23, 42, 0.98));
+      color: var(--accent-strong);
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    button:disabled {
+      opacity: 0.4;
+      cursor: default;
+    }
+
+    button:hover:not(:disabled) {
+      box-shadow: 0 0 0 1px rgba(56, 189, 248, 0.6);
+      transform: translateY(-0.5px);
+    }
+
+    .button-ghost {
+      border-color: rgba(148, 163, 184, 0.8);
+      background: rgba(15, 23, 42, 0.96);
+      color: var(--text-muted);
+    }
+
+    .button-ghost:hover {
+      border-color: rgba(148, 163, 184, 1);
+    }
+
+    .scenario-buttons {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-top: 4px;
+    }
+
+    .results-card {
+      border-radius: 1rem;
+      border: 1px solid rgba(148, 163, 184, 0.5);
+      background: rgba(15, 23, 42, 0.98);
+      padding: 8px 10px 10px;
+      font-size: 0.83rem;
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 6px 10px;
+    }
+
+    @media (max-width: 600px) {
+      .results-card {
+        grid-template-columns: minmax(0, 1fr);
+      }
+    }
+
+    .result-row {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .result-label {
+      font-size: 0.78rem;
+      text-transform: uppercase;
+      letter-spacing: 0.14em;
+      color: var(--text-muted);
+    }
+
+    .result-value {
+      font-family: "SF Mono", ui-monospace, Menlo, Monaco, Consolas,
+                   "Liberation Mono", "Courier New", monospace;
+      font-size: 0.88rem;
+    }
+
+    .result-note {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+    }
+
+    .result-highlight { color: var(--accent-strong); }
+    .result-bad { color: #fecaca; }
+
+    .pill-soft {
+      font-size: 0.72rem;
+      padding: 2px 7px;
+      border-radius: 999px;
+      border: 1px solid rgba(148, 163, 184, 0.55);
+      background: rgba(15, 23, 42, 0.95);
+      color: var(--text-muted);
+    }
+
+    .big-number {
+      font-size: 1.1rem;
+      font-family: "SF Mono", ui-monospace, Menlo, Monaco, Consolas,
+                   "Liberation Mono", "Courier New", monospace;
+    }
+
+    .big-number.good { color: var(--success); }
+    .big-number.bad { color: var(--danger); }
+
+    /* Risk of Bias lights */
+    .rob-lights-wrapper {
+      border-radius: 1rem;
+      border: 1px solid rgba(148, 163, 184, 0.5);
+      background: rgba(15, 23, 42, 0.98);
+      padding: 8px 10px 10px;
+      font-size: 0.82rem;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .rob-overall {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      border-bottom: 1px solid rgba(55, 65, 81, 0.9);
+      padding-bottom: 6px;
+    }
+
+    .rob-overall-left {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .rob-circle {
+      width: 32px;
+      height: 32px;
+      border-radius: 999px;
+      box-shadow: 0 0 0 2px rgba(15, 23, 42, 0.9);
+      border: 1px solid rgba(15, 23, 42, 0.9);
+    }
+
+    .rob-circle.low {
+      background: radial-gradient(circle at 30% 30%, #bbf7d0, #22c55e);
+      box-shadow:
+        0 0 0 2px rgba(15, 23, 42, 0.9),
+        0 0 14px rgba(34, 197, 94, 0.9);
+    }
+
+    .rob-circle.some {
+      background: radial-gradient(circle at 30% 30%, #fef9c3, #facc15);
+      box-shadow:
+        0 0 0 2px rgba(15, 23, 42, 0.9),
+        0 0 14px rgba(250, 204, 21, 0.9);
+    }
+
+    .rob-circle.high {
+      background: radial-gradient(circle at 30% 30%, #fecaca, #ef4444);
+      box-shadow:
+        0 0 0 2px rgba(15, 23, 42, 0.9),
+        0 0 14px rgba(239, 68, 68, 0.9);
+    }
+
+    .rob-overall-title {
+      font-size: 0.85rem;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      color: var(--text-muted);
+    }
+
+    .rob-overall-text {
+      font-size: 0.9rem;
+    }
+
+    .rob-domain-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .rob-domain-lights {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+
+    .rob-domain-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 3px 8px;
+      border-radius: 999px;
+      border: 1px solid rgba(55, 65, 81, 0.95);
+      background: rgba(15, 23, 42, 0.96);
+      font-size: 0.76rem;
+    }
+
+    .rob-dot {
+      width: 12px;
+      height: 12px;
+      border-radius: 999px;
+      box-shadow: 0 0 0 1px rgba(15, 23, 42, 0.9);
+    }
+
+    .rob-dot.low {
+      background: #22c55e;
+    }
+
+    .rob-dot.some {
+      background: #facc15;
+    }
+
+    .rob-dot.high {
+      background: #ef4444;
+    }
+
+    .rob-domain-label {
+      color: var(--text-muted);
+    }
+
+    .rob-domain-level {
+      font-family: "SF Mono", ui-monospace, Menlo, Monaco, Consolas,
+                   "Liberation Mono", "Courier New", monospace;
+    }
+
+    /* GRADE table */
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.8rem;
+      border-radius: 0.9rem;
+      overflow: hidden;
+      border: 1px solid rgba(148, 163, 184, 0.45);
+      background: rgba(15, 23, 42, 0.98);
+    }
+
+    th, td {
+      border-bottom: 1px solid rgba(55, 65, 81, 0.85);
+      padding: 4px 6px;
+      text-align: center;
+    }
+
+    th {
+      background: rgba(15, 23, 42, 0.96);
+      font-weight: 500;
+    }
+
+    tr:last-child td {
+      border-bottom: none;
+    }
+
+    th.col-header {
+      font-size: 0.78rem;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      color: var(--text-muted);
+    }
+
+    td.domain-name {
+      text-align: left;
+      font-size: 0.78rem;
+      color: var(--text-muted);
+    }
+
+    .grade-controls {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      align-items: center;
+      margin-top: 6px;
+    }
+
+    footer {
+      margin-top: 8px;
+      font-size: 0.72rem;
+      color: var(--text-muted);
+      display: flex;
+      justify-content: space-between;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+  </style>
+</head>
+<body>
+<div class="app-shell">
+  <header>
+    <div class="title-block">
+      <h1>
+        Risk of Bias &amp; GRADE Playground
+        <span class="title-pill">RoB-2 traffic lights · GRADE certainty</span>
+      </h1>
+      <div class="subtitle">
+        Move from <em>numbers</em> to <em>judgment</em>: set domain-level risk-of-bias judgments and see
+        an overall “traffic light”, then play with GRADE downgrades to see how overall certainty
+        drops from High → Moderate → Low → Very low.
+      </div>
+    </div>
+    <div class="tagline">
+      <span class="tagline-dot"></span>
+      Interactive appraisal demo
+    </div>
+  </header>
+
+  <main>
+    <!-- 1. Risk-of-Bias Traffic Light -->
+    <section class="card">
+      <div class="card-inner">
+        <h2>
+          Risk-of-Bias Traffic Light (RoB 2 style)
+          <span class="label">Randomized trial example</span>
+        </h2>
+        <div class="hint">
+          Choose judgments for each RoB-2 domain (Low / Some concerns / High). The overall traffic
+          light uses a simple rule: <strong>High</strong> if any domain is High; <strong>Some concerns</strong>
+          if at least one domain has Some concerns but none is High; otherwise <strong>Low</strong>.
+          Use the presets for quick teaching examples.
+        </div>
+
+        <div class="row-grid">
+          <div>
+            <div class="inputs-grid">
+              <div class="input-group">
+                <div class="input-label">Randomization process</div>
+                <select id="robRandomization">
+                  <option value="low">Low risk</option>
+                  <option value="some">Some concerns</option>
+                  <option value="high">High risk</option>
+                </select>
+                <div class="input-sub">Sequence generation, allocation concealment, baseline balance.</div>
+              </div>
+              <div class="input-group">
+                <div class="input-label">Deviations from intended interventions</div>
+                <select id="robDeviations">
+                  <option value="low">Low risk</option>
+                  <option value="some">Some concerns</option>
+                  <option value="high">High risk</option>
+                </select>
+                <div class="input-sub">Blinding, adherence, co-interventions.</div>
+              </div>
+              <div class="input-group">
+                <div class="input-label">Missing outcome data</div>
+                <select id="robMissing">
+                  <option value="low">Low risk</option>
+                  <option value="some">Some concerns</option>
+                  <option value="high">High risk</option>
+                </select>
+                <div class="input-sub">Loss to follow-up, differential attrition.</div>
+              </div>
+              <div class="input-group">
+                <div class="input-label">Measurement of the outcome</div>
+                <select id="robMeasurement">
+                  <option value="low">Low risk</option>
+                  <option value="some">Some concerns</option>
+                  <option value="high">High risk</option>
+                </select>
+                <div class="input-sub">Blinded outcome assessment, objective vs subjective outcomes.</div>
+              </div>
+              <div class="input-group">
+                <div class="input-label">Selection of the reported result</div>
+                <select id="robReporting">
+                  <option value="low">Low risk</option>
+                  <option value="some">Some concerns</option>
+                  <option value="high">High risk</option>
+                </select>
+                <div class="input-sub">Protocol adherence, selective reporting, outcome switching.</div>
+              </div>
+            </div>
+
+            <div class="scenario-buttons">
+              <button type="button" class="button-ghost" id="robPresetPerfect">
+                Perfect RCT
+              </button>
+              <button type="button" class="button-ghost" id="robPresetConcealment">
+                Poor concealment
+              </button>
+              <button type="button" class="button-ghost" id="robPresetLoss">
+                High loss to follow-up
+              </button>
+              <button type="button" class="button-ghost" id="robPresetMessy">
+                Open-label, messy trial
+              </button>
+            </div>
+
+            <div class="hint" style="margin-top:6px;">
+              Teaching trick: start with a “perfect RCT” (all green), then change just one
+              domain (e.g. missing data → High) and ask the audience if they’d still trust
+              the trial’s result.
+            </div>
+          </div>
+
+          <div>
+            <div class="rob-lights-wrapper" id="robLightsPanel">
+              <!-- Filled by JS -->
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 2. GRADE Summary Table Demo -->
+    <section class="card">
+      <div class="card-inner">
+        <h2>
+          GRADE Summary Table: Overall Certainty
+          <span class="label">High · Moderate · Low · Very low</span>
+        </h2>
+        <div class="hint">
+          Start from <strong>High</strong> (for RCTs) or <strong>Low</strong> (for observational
+          evidence). Each domain can be downgraded by 1 level (“serious”) or 2 levels
+          (“very serious”). The overall certainty is the starting level minus the sum
+          of downgrades, bounded between High and Very low.
+        </div>
+
+        <div class="grid-2col">
+          <div>
+            <table>
+              <thead>
+              <tr>
+                <th class="col-header">Domain</th>
+                <th class="col-header">Judgment</th>
+              </tr>
+              </thead>
+              <tbody>
+              <tr>
+                <td class="domain-name">Risk of bias</td>
+                <td>
+                  <select id="gradeRiskBias">
+                    <option value="0">No serious concerns (0)</option>
+                    <option value="-1">Serious (-1)</option>
+                    <option value="-2">Very serious (-2)</option>
+                  </select>
+                </td>
+              </tr>
+              <tr>
+                <td class="domain-name">Inconsistency</td>
+                <td>
+                  <select id="gradeInconsistency">
+                    <option value="0">No serious concerns (0)</option>
+                    <option value="-1">Serious (-1)</option>
+                    <option value="-2">Very serious (-2)</option>
+                  </select>
+                </td>
+              </tr>
+              <tr>
+                <td class="domain-name">Indirectness</td>
+                <td>
+                  <select id="gradeIndirectness">
+                    <option value="0">No serious concerns (0)</option>
+                    <option value="-1">Serious (-1)</option>
+                    <option value="-2">Very serious (-2)</option>
+                  </select>
+                </td>
+              </tr>
+              <tr>
+                <td class="domain-name">Imprecision</td>
+                <td>
+                  <select id="gradeImprecision">
+                    <option value="0">No serious concerns (0)</option>
+                    <option value="-1">Serious (-1)</option>
+                    <option value="-2">Very serious (-2)</option>
+                  </select>
+                </td>
+              </tr>
+              <tr>
+                <td class="domain-name">Publication bias</td>
+                <td>
+                  <select id="gradePubBias">
+                    <option value="0">No serious concerns (0)</option>
+                    <option value="-1">Suspected (-1)</option>
+                    <option value="-2">Strongly suspected (-2)</option>
+                  </select>
+                </td>
+              </tr>
+              </tbody>
+            </table>
+
+            <div class="grade-controls">
+              <div class="input-group" style="margin-top:4px;">
+                <div class="input-label">Evidence type (starting level)</div>
+                <select id="gradeStartLevel">
+                  <option value="high">Randomized trials (start = High)</option>
+                  <option value="low">Observational studies (start = Low)</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="scenario-buttons" style="margin-top:4px;">
+              <button type="button" class="button-ghost" id="gradePresetRobust">
+                Robust RCT (no downgrades)
+              </button>
+              <button type="button" class="button-ghost" id="gradePresetImprecise">
+                Imprecise, conflicting trials
+              </button>
+              <button type="button" class="button-ghost" id="gradePresetObs">
+                Observational, high RoB
+              </button>
+            </div>
+
+            <div class="hint" style="margin-top:6px;">
+              Talking point: “Even if the pooled RR looks impressive, if we downgrade for
+              imprecision and risk of bias, we might end up with Low or Very low certainty.”
+            </div>
+          </div>
+
+          <div>
+            <div class="results-card" id="gradeStatsPanel">
+              <!-- Filled by JS -->
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <div>
+      Live demo idea: pick one RCT from your slides and ask the room to fill this RoB form.
+      Then translate that into a GRADE certainty judgment in the second card.
+    </div>
+    <div>
+      Save as <code>rob_grade_playground.html</code> and open offline during your EBM session.
+    </div>
+  </footer>
+</div>
+
+<script>
+  // -------- Risk of Bias logic --------
+
+  function getRobSelections() {
+    const domains = [
+      { id: "robRandomization", label: "Randomization" },
+      { id: "robDeviations", label: "Deviations from interventions" },
+      { id: "robMissing", label: "Missing outcome data" },
+      { id: "robMeasurement", label: "Outcome measurement" },
+      { id: "robReporting", label: "Selective reporting" }
+    ];
+    return domains.map(d => ({
+      key: d.id,
+      label: d.label,
+      value: (document.getElementById(d.id)?.value) || "low"
+    }));
+  }
+
+  function overallRobLevel(domainValues) {
+    const vals = domainValues.map(d => d.value);
+    if (vals.includes("high")) return "high";
+    if (vals.includes("some")) return "some";
+    return "low";
+  }
+
+  function robLevelLabel(level) {
+    if (level === "high") return "High risk of bias";
+    if (level === "some") return "Some concerns";
+    return "Low risk of bias";
+  }
+
+  function robLevelExplanation(level) {
+    if (level === "high") {
+      return "At least one domain is at high risk of bias. The trial’s results may be substantially distorted.";
+    }
+    if (level === "some") {
+      return "One or more domains raise some concerns, but none are at high risk. Interpret the findings with caution.";
+    }
+    return "All domains are judged to be at low risk. Further bias is unlikely to seriously alter the estimate.";
+  }
+
+  function updateRobUI() {
+    const domains = getRobSelections();
+    const overall = overallRobLevel(domains);
+    const panel = document.getElementById("robLightsPanel");
+    if (!panel) return;
+
+    const overallClass = overall === "high" ? "high" : (overall === "some" ? "some" : "low");
+
+    const domainLightsHtml = domains.map(d => {
+      const cls = d.value === "high" ? "high" : (d.value === "some" ? "some" : "low");
+      const labelText =
+        d.value === "high" ? "High" :
+        d.value === "some" ? "Some" : "Low";
+      return `
+        <div class="rob-domain-pill">
+          <div class="rob-dot ${cls}"></div>
+          <span class="rob-domain-label">${d.label}</span>
+          <span class="rob-domain-level">(${labelText})</span>
+        </div>
+      `;
+    }).join("");
+
+    panel.innerHTML = `
+      <div class="rob-overall">
+        <div class="rob-overall-left">
+          <div class="rob-circle ${overallClass}"></div>
+          <div>
+            <div class="rob-overall-title">Overall risk of bias (RoB 2)</div>
+            <div class="rob-overall-text"><strong>${robLevelLabel(overall)}</strong></div>
+          </div>
+        </div>
+        <div class="pill-soft">
+          Rule: High if any domain is high · Some concerns if any domain has some concerns · else Low
+        </div>
+      </div>
+      <div class="rob-domain-row">
+        <div class="rob-domain-lights">
+          ${domainLightsHtml}
+        </div>
+      </div>
+      <div class="result-note" style="margin-top:4px;">
+        ${robLevelExplanation(overall)}
+      </div>
+    `;
+  }
+
+  function setRobPreset(presetName) {
+    // Low/some/high combinations
+    const setVal = (id, val) => {
+      const el = document.getElementById(id);
+      if (el) el.value = val;
+    };
+
+    if (presetName === "perfect") {
+      ["robRandomization", "robDeviations", "robMissing", "robMeasurement", "robReporting"].forEach(id => {
+        setVal(id, "low");
+      });
+    } else if (presetName === "concealment") {
+      setVal("robRandomization", "high");    // poor concealment
+      setVal("robDeviations", "low");
+      setVal("robMissing", "low");
+      setVal("robMeasurement", "low");
+      setVal("robReporting", "some");
+    } else if (presetName === "loss") {
+      setVal("robRandomization", "low");
+      setVal("robDeviations", "low");
+      setVal("robMissing", "high");        // high attrition
+      setVal("robMeasurement", "some");
+      setVal("robReporting", "some");
+    } else if (presetName === "messy") {
+      setVal("robRandomization", "some");
+      setVal("robDeviations", "high");     // open-label deviations
+      setVal("robMissing", "high");
+      setVal("robMeasurement", "high");
+      setVal("robReporting", "high");
+    }
+    updateRobUI();
+  }
+
+  // -------- GRADE logic --------
+
+  function gradeStartScore() {
+    const sel = document.getElementById("gradeStartLevel")?.value || "high";
+    // 3 = High, 2 = Moderate, 1 = Low, 0 = Very low
+    if (sel === "high") return 3;
+    if (sel === "low") return 1;
+    return 3;
+  }
+
+  function gradeScoreLabel(score) {
+    if (score >= 3) return "High";
+    if (score === 2) return "Moderate";
+    if (score === 1) return "Low";
+    return "Very low";
+  }
+
+  function gradeScoreColor(score) {
+    if (score >= 3) return "good";
+    if (score === 2) return "";  // neutral
+    if (score === 1) return "bad";
+    return "bad";
+  }
+
+  function getGradeDomainValues() {
+    const ids = [
+      { id: "gradeRiskBias", label: "risk of bias" },
+      { id: "gradeInconsistency", label: "inconsistency" },
+      { id: "gradeIndirectness", label: "indirectness" },
+      { id: "gradeImprecision", label: "imprecision" },
+      { id: "gradePubBias", label: "publication bias" }
+    ];
+    return ids.map(d => {
+      const el = document.getElementById(d.id);
+      const v = el ? parseInt(el.value, 10) : 0;
+      return { key: d.id, label: d.label, value: Number.isFinite(v) ? v : 0 };
+    });
+  }
+
+  function gradeDomainLevelText(value) {
+    if (value === 0) return "no serious concerns";
+    if (value === -1) return "serious";
+    if (value === -2) return "very serious";
+    return "";
+  }
+
+  function updateGradeUI() {
+    const startScore = gradeStartScore();
+    const domains = getGradeDomainValues();
+    const totalDowngrade = domains.reduce((acc, d) => acc + d.value, 0); // values are 0, -1, -2
+    let finalScore = startScore + totalDowngrade;
+    if (finalScore > 3) finalScore = 3;
+    if (finalScore < 0) finalScore = 0;
+
+    const label = gradeScoreLabel(finalScore);
+    const colorClass = gradeScoreColor(finalScore);
+
+    // Build narrative of downgrades
+    const downgradeReasons = domains.filter(d => d.value < 0)
+      .map(d => {
+        const levelTxt = gradeDomainLevelText(d.value);
+        const levelPhrase = levelTxt.charAt(0).toUpperCase() + levelTxt.slice(1);
+        const step = d.value === -2 ? "2 levels" : "1 level";
+        return `${step} for ${d.label} (${levelTxt})`;
+      });
+
+    const startLabel = startScore === 3 ? "High" : (startScore === 2 ? "Moderate" : (startScore === 1 ? "Low" : "Very low"));
+    const totalDownLevels = -totalDowngrade; // positive number of levels removed
+
+    let explanation;
+    if (totalDownLevels <= 0) {
+      explanation = `No downgrades applied. Evidence remains at <strong>${startLabel}</strong> certainty.`;
+    } else {
+      const reasonsList = downgradeReasons.length
+        ? downgradeReasons.join("; ")
+        : `${totalDownLevels} level(s) of downgrading.`;
+      const plural = totalDownLevels === 1 ? "level" : "levels";
+      explanation = `Started at <strong>${startLabel}</strong> certainty and downgraded <strong>${totalDownLevels} ${plural}</strong> (${reasonsList}).`;
+    }
+
+    const panel = document.getElementById("gradeStatsPanel");
+    if (!panel) return;
+
+    panel.innerHTML = `
+      <div class="result-row">
+        <div class="result-label">Starting level (by study design)</div>
+        <div class="result-value">
+          ${startLabel} certainty
+        </div>
+        <div class="result-note">
+          RCTs usually start at High; observational evidence at Low before downgrades or upgrades.
+        </div>
+      </div>
+      <div class="result-row">
+        <div class="result-label">Overall certainty (GRADE)</div>
+        <div class="result-value">
+          <span class="big-number ${colorClass}">${label}</span>
+        </div>
+        <div class="result-note">
+          ${explanation}
+        </div>
+      </div>
+      <div class="result-row">
+        <div class="result-label">Downgrades by domain</div>
+        <div class="result-value">
+          ${domains.map(d => {
+            const txt = gradeDomainLevelText(d.value);
+            return `${d.label}: ${txt || "no serious concerns"}`;
+          }).join(" · ")}
+        </div>
+        <div class="result-note">
+          Each “serious” downgrade reduces certainty by 1 level; “very serious” by 2 levels.
+        </div>
+      </div>
+      <div class="result-row">
+        <div class="result-label">Interpretation</div>
+        <div class="result-note">
+          High: further research unlikely to change confidence. Moderate: may change confidence.
+          Low/Very low: our best guess may change substantially with better evidence.
+        </div>
+      </div>
+    `;
+  }
+
+  function setGradePreset(name) {
+    const setVal = (id, val) => {
+      const el = document.getElementById(id);
+      if (el) el.value = String(val);
+    };
+    const setStart = (v) => {
+      const el = document.getElementById("gradeStartLevel");
+      if (el) el.value = v;
+    };
+
+    if (name === "robust") {
+      setStart("high");
+      setVal("gradeRiskBias", 0);
+      setVal("gradeInconsistency", 0);
+      setVal("gradeIndirectness", 0);
+      setVal("gradeImprecision", 0);
+      setVal("gradePubBias", 0);
+    } else if (name === "imprecise") {
+      setStart("high");
+      setVal("gradeRiskBias", 0);
+      setVal("gradeInconsistency", -1);  // moderate heterogeneity
+      setVal("gradeIndirectness", 0);
+      setVal("gradeImprecision", -2);   // very serious imprecision
+      setVal("gradePubBias", 0);
+    } else if (name === "obs") {
+      setStart("low");
+      setVal("gradeRiskBias", -1);      // serious risk of bias
+      setVal("gradeInconsistency", 0);
+      setVal("gradeIndirectness", 0);
+      setVal("gradeImprecision", -1);   // imprecise
+      setVal("gradePubBias", -1);       // suspected publication bias
+    }
+    updateGradeUI();
+  }
+
+  // -------- Init --------
+
+  document.addEventListener("DOMContentLoaded", () => {
+    // RoB events
+    ["robRandomization", "robDeviations", "robMissing", "robMeasurement", "robReporting"]
+      .forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.addEventListener("change", updateRobUI);
+      });
+
+    document.getElementById("robPresetPerfect")?.addEventListener("click", () => setRobPreset("perfect"));
+    document.getElementById("robPresetConcealment")?.addEventListener("click", () => setRobPreset("concealment"));
+    document.getElementById("robPresetLoss")?.addEventListener("click", () => setRobPreset("loss"));
+    document.getElementById("robPresetMessy")?.addEventListener("click", () => setRobPreset("messy"));
+
+    // GRADE events
+    ["gradeRiskBias", "gradeInconsistency", "gradeIndirectness",
+     "gradeImprecision", "gradePubBias", "gradeStartLevel"].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.addEventListener("change", updateGradeUI);
+    });
+
+    document.getElementById("gradePresetRobust")?.addEventListener("click", () => setGradePreset("robust"));
+    document.getElementById("gradePresetImprecise")?.addEventListener("click", () => setGradePreset("imprecise"));
+    document.getElementById("gradePresetObs")?.addEventListener("click", () => setGradePreset("obs"));
+
+    // Initial state
+    setRobPreset("perfect");
+    setGradePreset("robust");
+  });
+</script>
+</body>
+</html>

@@ -1,0 +1,1083 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Confounding, Bias & Adjustment Playground</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    :root {
+      --bg: #0f172a;
+      --bg-elevated: #020617;
+      --card-bg: #020617;
+      --accent: #38bdf8;
+      --accent-soft: rgba(56, 189, 248, 0.15);
+      --accent-strong: #0ea5e9;
+      --text: #e5e7eb;
+      --text-muted: #9ca3af;
+      --danger: #f97373;
+      --warning: #fbbf24;
+      --success: #22c55e;
+      --radius-lg: 1.25rem;
+      --shadow-soft: 0 18px 45px rgba(15, 23, 42, 0.9);
+      --border-subtle: 1px solid rgba(148, 163, 184, 0.22);
+      --font-sans: system-ui, -apple-system, BlinkMacSystemFont, "SF Pro Text",
+                   "Segoe UI", sans-serif;
+    }
+
+    * { box-sizing: border-box; }
+
+    html, body {
+      margin: 0;
+      padding: 0;
+      background: radial-gradient(circle at top left, #1f2937 0, #020617 45%, #000 100%);
+      color: var(--text);
+      font-family: var(--font-sans);
+    }
+
+    body {
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: stretch;
+      padding: 24px;
+    }
+
+    .app-shell {
+      max-width: 1200px;
+      width: 100%;
+      margin: auto;
+      background: linear-gradient(145deg, rgba(15, 23, 42, 0.96), rgba(15, 23, 42, 0.92));
+      border-radius: 1.5rem;
+      box-shadow: var(--shadow-soft);
+      border: 1px solid rgba(148, 163, 184, 0.35);
+      padding: 24px 24px 28px;
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+      backdrop-filter: blur(12px);
+    }
+
+    @media (max-width: 900px) {
+      body { padding: 12px; }
+      .app-shell {
+        padding: 18px 14px 22px;
+        border-radius: 1.1rem;
+      }
+    }
+
+    header {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      gap: 12px;
+      align-items: flex-start;
+    }
+
+    .title-block h1 {
+      font-size: clamp(1.6rem, 2.1vw, 1.9rem);
+      margin: 0;
+      letter-spacing: 0.02em;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .title-pill {
+      font-size: 0.8rem;
+      padding: 2px 10px;
+      border-radius: 999px;
+      border: 1px solid rgba(148, 163, 184, 0.4);
+      color: var(--text-muted);
+    }
+
+    .subtitle {
+      font-size: 0.9rem;
+      color: var(--text-muted);
+      margin-top: 4px;
+      max-width: 760px;
+    }
+
+    .tagline {
+      font-size: 0.78rem;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      color: var(--accent);
+      background: rgba(56, 189, 248, 0.1);
+      border-radius: 999px;
+      padding: 4px 12px;
+      border: 1px solid rgba(56, 189, 248, 0.35);
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .tagline-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 999px;
+      background: var(--accent);
+      box-shadow: 0 0 10px rgba(56, 189, 248, 0.85);
+    }
+
+    h2 {
+      margin: 0 0 10px;
+      font-size: 1.08rem;
+      letter-spacing: 0.02em;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 6px;
+    }
+
+    h2 span.label {
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.14em;
+      color: var(--text-muted);
+    }
+
+    main {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .card {
+      background: radial-gradient(circle at top right,
+          rgba(56, 189, 248, 0.06) 0,
+          rgba(15, 23, 42, 0.98) 40%,
+          #020617 100%);
+      border-radius: var(--radius-lg);
+      border: var(--border-subtle);
+      padding: 14px 16px 16px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .card::before {
+      content: "";
+      position: absolute;
+      inset: -120px;
+      background-image: radial-gradient(circle at 0 -40px,
+        rgba(56, 189, 248, 0.12),
+        transparent 60%);
+      opacity: 0.7;
+      pointer-events: none;
+    }
+
+    .card-inner {
+      position: relative;
+      z-index: 1;
+    }
+
+    .row-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1.3fr) minmax(0, 1.1fr);
+      gap: 16px;
+    }
+
+    @media (max-width: 1000px) {
+      .row-grid {
+        grid-template-columns: minmax(0, 1fr);
+      }
+    }
+
+    .hint {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      margin-bottom: 6px;
+    }
+
+    .grid-2col {
+      display: grid;
+      grid-template-columns: minmax(0, 1.1fr) minmax(0, 1.1fr);
+      gap: 12px;
+    }
+
+    @media (max-width: 800px) {
+      .grid-2col {
+        grid-template-columns: minmax(0, 1fr);
+      }
+    }
+
+    .inputs-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 8px 12px;
+      margin-bottom: 6px;
+    }
+
+    @media (max-width: 600px) {
+      .inputs-grid {
+        grid-template-columns: minmax(0, 1fr);
+      }
+    }
+
+    .input-group {
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+      font-size: 0.82rem;
+    }
+
+    .input-label {
+      font-size: 0.78rem;
+      text-transform: uppercase;
+      letter-spacing: 0.14em;
+      color: var(--text-muted);
+    }
+
+    .input-sub {
+      font-size: 0.72rem;
+      color: var(--text-muted);
+    }
+
+    input[type="number"], select {
+      width: 100%;
+      padding: 4px 6px;
+      border-radius: 0.5rem;
+      border: 1px solid rgba(148, 163, 184, 0.6);
+      background: rgba(15, 23, 42, 0.98);
+      color: var(--text);
+      font-size: 0.83rem;
+    }
+
+    input[type="number"]:focus, select:focus {
+      outline: none;
+      border-color: rgba(56, 189, 248, 0.9);
+      box-shadow: 0 0 0 1px rgba(56, 189, 248, 0.4);
+    }
+
+    input[type="range"] {
+      width: 100%;
+    }
+
+    button {
+      font-size: 0.8rem;
+      text-transform: uppercase;
+      letter-spacing: 0.14em;
+      border-radius: 999px;
+      padding: 5px 12px;
+      border: 1px solid rgba(56, 189, 248, 0.9);
+      background: radial-gradient(circle at top left,
+          rgba(56, 189, 248, 0.3),
+          rgba(15, 23, 42, 0.98));
+      color: var(--accent-strong);
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    button:disabled {
+      opacity: 0.4;
+      cursor: default;
+    }
+
+    button:hover:not(:disabled) {
+      box-shadow: 0 0 0 1px rgba(56, 189, 248, 0.6);
+      transform: translateY(-0.5px);
+    }
+
+    .results-card {
+      border-radius: 1rem;
+      border: 1px solid rgba(148, 163, 184, 0.5);
+      background: rgba(15, 23, 42, 0.98);
+      padding: 8px 10px 10px;
+      font-size: 0.83rem;
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 6px 10px;
+    }
+
+    @media (max-width: 600px) {
+      .results-card {
+        grid-template-columns: minmax(0, 1fr);
+      }
+    }
+
+    .result-row {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .result-label {
+      font-size: 0.78rem;
+      text-transform: uppercase;
+      letter-spacing: 0.14em;
+      color: var(--text-muted);
+    }
+
+    .result-value {
+      font-family: "SF Mono", ui-monospace, Menlo, Monaco, Consolas,
+                   "Liberation Mono", "Courier New", monospace;
+      font-size: 0.88rem;
+    }
+
+    .result-note {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+    }
+
+    .result-highlight { color: var(--accent-strong); }
+    .result-bad { color: #fecaca; }
+
+    .big-number {
+      font-size: 1.1rem;
+      font-family: "SF Mono", ui-monospace, Menlo, Monaco, Consolas,
+                   "Liberation Mono", "Courier New", monospace;
+    }
+
+    .big-number.good { color: var(--accent-strong); }
+    .big-number.bad { color: #fecaca; }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.8rem;
+      border-radius: 0.9rem;
+      overflow: hidden;
+      border: 1px solid rgba(148, 163, 184, 0.45);
+      background: rgba(15, 23, 42, 0.98);
+    }
+
+    th, td {
+      border-bottom: 1px solid rgba(55, 65, 81, 0.85);
+      padding: 5px 6px;
+      text-align: center;
+    }
+
+    th {
+      background: rgba(15, 23, 42, 0.96);
+      font-weight: 500;
+    }
+
+    tr:last-child td {
+      border-bottom: none;
+    }
+
+    th.col-header {
+      font-size: 0.78rem;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      color: var(--text-muted);
+    }
+
+    td.row-header {
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      color: var(--text-muted);
+      text-align: left;
+      background: rgba(15, 23, 42, 0.9);
+    }
+
+    .pill-soft {
+      font-size: 0.72rem;
+      padding: 2px 7px;
+      border-radius: 999px;
+      border: 1px solid rgba(148, 163, 184, 0.55);
+      background: rgba(15, 23, 42, 0.95);
+      color: var(--text-muted);
+    }
+
+    /* Attrition card */
+    .attr-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1.2fr) minmax(0, 1.2fr);
+      gap: 12px;
+    }
+
+    @media (max-width: 800px) {
+      .attr-grid {
+        grid-template-columns: minmax(0, 1fr);
+      }
+    }
+
+    footer {
+      margin-top: 8px;
+      font-size: 0.72rem;
+      color: var(--text-muted);
+      display: flex;
+      justify-content: space-between;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+  </style>
+</head>
+<body>
+<div class="app-shell">
+  <header>
+    <div class="title-block">
+      <h1>
+        Confounding, Bias &amp; Adjustment Playground
+        <span class="title-pill">Crude vs adjusted · Attrition bias</span>
+      </h1>
+      <div class="subtitle">
+        See how a confounder can create or distort a treatment effect, and how loss to follow-up
+        can widen the plausible range of effects. All calculations run locally in your browser.
+      </div>
+    </div>
+    <div class="tagline">
+      <span class="tagline-dot"></span>
+      Interactive EBM bias demo
+    </div>
+  </header>
+
+  <main>
+    <!-- 1. Confounding demo -->
+    <section class="card">
+      <div class="card-inner">
+        <h2>
+          Confounding Demo: Crude vs Adjusted Effect
+          <span class="label">Simulated cohort with a confounder</span>
+        </h2>
+        <div class="hint">
+          We simulate a cohort with a binary exposure (E), outcome (Y) and confounder (C = high vs low risk,
+          e.g. severity or age). The true causal effect of E on Y is fixed, but high-risk patients are more
+          likely to receive treatment. Compare crude vs stratified/adjusted odds ratios.
+        </div>
+
+        <div class="row-grid">
+          <div>
+            <div class="inputs-grid">
+              <div class="input-group">
+                <div class="input-label">True causal OR of treatment</div>
+                <input type="range" id="trueOrSlider" min="50" max="300" value="150" />
+                <div class="input-sub">
+                  exp(β<sub>E</sub>). Slider 50–300% (i.e. OR 0.5–3.0). Current:
+                  <span id="trueOrDisplay" class="big-number"></span>
+                </div>
+              </div>
+              <div class="input-group">
+                <div class="input-label">Confounder effect (high vs low risk)</div>
+                <input type="range" id="confOrSlider" min="100" max="600" value="300" />
+                <div class="input-sub">
+                  OR for high-risk vs low-risk. Current:
+                  <span id="confOrDisplay" class="big-number"></span>
+                </div>
+              </div>
+              <div class="input-group">
+                <div class="input-label">% high-risk among treated</div>
+                <input type="range" id="highRiskTreatedSlider" min="0" max="100" value="70" />
+                <div class="input-sub">
+                  P(C=high | E=1). Current:
+                  <span id="highRiskTreatedDisplay" class="big-number"></span>
+                </div>
+              </div>
+              <div class="input-group">
+                <div class="input-label">% high-risk among control</div>
+                <input type="range" id="highRiskControlSlider" min="0" max="100" value="30" />
+                <div class="input-sub">
+                  P(C=high | E=0). Current:
+                  <span id="highRiskControlDisplay" class="big-number"></span>
+                </div>
+              </div>
+              <div class="input-group">
+                <div class="input-label">Sample size (N)</div>
+                <input type="number" id="confNSample" value="2000" min="200" step="200" />
+                <div class="input-sub">
+                  Cohort size. Larger N = less Monte Carlo noise.
+                </div>
+              </div>
+              <div class="input-group">
+                <div class="input-label">Baseline event risk (low risk, unexposed)</div>
+                <input type="range" id="baselineRiskSlider" min="5" max="40" value="15" />
+                <div class="input-sub">
+                  P(Y=1 | E=0, C=low). Current:
+                  <span id="baselineRiskDisplay" class="big-number"></span>
+                </div>
+              </div>
+            </div>
+            <button id="confSimBtn">▶ Re-simulate cohort</button>
+            <div class="hint" style="margin-top:6px;">
+              Play with the proportion of high-risk patients in each arm. When high-risk patients are
+              more likely to receive treatment, crude OR is pulled towards the confounder’s effect.
+            </div>
+          </div>
+
+          <div>
+            <div class="results-card" id="confStatsPanel">
+              <!-- filled by JS -->
+            </div>
+          </div>
+        </div>
+
+        <div class="grid-2col" style="margin-top:10px;">
+          <div>
+            <table id="confTableSummary">
+              <thead>
+              <tr>
+                <th></th>
+                <th class="col-header">High risk (C=1)</th>
+                <th class="col-header">Low risk (C=0)</th>
+                <th class="col-header">Event risk</th>
+              </tr>
+              </thead>
+              <tbody>
+              <tr>
+                <td class="row-header">Treated (E=1)</td>
+                <td id="cellTreatedHigh"></td>
+                <td id="cellTreatedLow"></td>
+                <td id="cellTreatedRisk"></td>
+              </tr>
+              <tr>
+                <td class="row-header">Control (E=0)</td>
+                <td id="cellControlHigh"></td>
+                <td id="cellControlLow"></td>
+                <td id="cellControlRisk"></td>
+              </tr>
+              </tbody>
+            </table>
+            <div class="hint" style="margin-top:4px;">
+              This table shows how the confounder is distributed across exposure groups,
+              and the overall outcome risk in each arm.
+            </div>
+          </div>
+
+          <div>
+            <table id="confStrataTable">
+              <thead>
+              <tr>
+                <th></th>
+                <th class="col-header">Event</th>
+                <th class="col-header">No event</th>
+                <th class="col-header">OR (stratum)</th>
+              </tr>
+              </thead>
+              <tbody>
+              <tr>
+                <td class="row-header">High risk (C=1)</td>
+                <td id="cellHighEvent"></td>
+                <td id="cellHighNoEvent"></td>
+                <td id="cellHighOR"></td>
+              </tr>
+              <tr>
+                <td class="row-header">Low risk (C=0)</td>
+                <td id="cellLowEvent"></td>
+                <td id="cellLowNoEvent"></td>
+                <td id="cellLowOR"></td>
+              </tr>
+              </tbody>
+            </table>
+            <div class="hint" style="margin-top:4px;">
+              Within each stratum of C, the confounding is “blocked”: you should see the
+              stratum-specific ORs close to the true causal OR.
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 2. Selection / Attrition bias toy -->
+    <section class="card">
+      <div class="card-inner">
+        <h2>
+          Selection / Attrition Bias Toy
+          <span class="label">Best- and worst-case treatment effects</span>
+        </h2>
+        <div class="hint">
+          Start from observed event counts among those followed. Then specify how many patients are lost
+          to follow-up in each arm and what you assume about their event rates. The app shows:
+          (1) the observed effect ignoring dropouts,
+          (2) the effect under your assumptions,
+          (3) the best- and worst-case bounds if the lost patients are all low-risk vs all high-risk.
+        </div>
+
+        <div class="attr-grid">
+          <div>
+            <div class="inputs-grid">
+              <div class="input-group">
+                <div class="input-label">Total in treatment arm (N<sub>T</sub>)</div>
+                <input type="number" id="attrNTreat" value="200" min="20" step="10" />
+              </div>
+              <div class="input-group">
+                <div class="input-label">Total in control arm (N<sub>C</sub>)</div>
+                <input type="number" id="attrNControl" value="200" min="20" step="10" />
+              </div>
+              <div class="input-group">
+                <div class="input-label">Events in treatment (observed)</div>
+                <input type="number" id="attrEventsTreatObs" value="30" min="0" step="1" />
+                <div class="input-sub">Among those with complete follow-up.</div>
+              </div>
+              <div class="input-group">
+                <div class="input-label">Events in control (observed)</div>
+                <input type="number" id="attrEventsControlObs" value="45" min="0" step="1" />
+              </div>
+              <div class="input-group">
+                <div class="input-label">% lost to follow-up (treatment)</div>
+                <input type="range" id="attrLostTreatSlider" min="0" max="50" value="15" />
+                <div class="input-sub">
+                  Current: <span id="attrLostTreatDisplay" class="big-number"></span>
+                </div>
+              </div>
+              <div class="input-group">
+                <div class="input-label">% lost to follow-up (control)</div>
+                <input type="range" id="attrLostControlSlider" min="0" max="50" value="5" />
+                <div class="input-sub">
+                  Current: <span id="attrLostControlDisplay" class="big-number"></span>
+                </div>
+              </div>
+              <div class="input-group">
+                <div class="input-label">Assumed event risk among lost (treatment)</div>
+                <input type="range" id="attrRiskLostTreatSlider" min="0" max="100" value="20" />
+                <div class="input-sub">
+                  Current: <span id="attrRiskLostTreatDisplay" class="big-number"></span>
+                </div>
+              </div>
+              <div class="input-group">
+                <div class="input-label">Assumed event risk among lost (control)</div>
+                <input type="range" id="attrRiskLostControlSlider" min="0" max="100" value="40" />
+                <div class="input-sub">
+                  Current: <span id="attrRiskLostControlDisplay" class="big-number"></span>
+                </div>
+              </div>
+            </div>
+            <button id="attrRecalcBtn">▶ Update effect with attrition</button>
+            <div class="hint" style="margin-top:6px;">
+              Teaching trick: keep observed data fixed, increase loss in the treatment arm and assume
+              lost patients are high risk. Let the audience see how the “true” effect could be very
+              different from the naïve analysis.
+            </div>
+          </div>
+
+          <div>
+            <div class="results-card" id="attrStatsPanel">
+              <!-- filled by JS -->
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <div>
+      Suggestion: first show a case with no confounding (equal high-risk proportions), then add strong confounding
+      and ask “What changed? The biology or the patient mix?”.
+    </div>
+    <div>
+      Save as <code>confounding_bias_playground.html</code> and open offline for your EBM session.
+    </div>
+  </footer>
+</div>
+
+<script>
+  // ---------- Utility helpers ----------
+
+  function safeNumber(value) {
+    const n = Number(value);
+    return Number.isFinite(n) ? n : 0;
+  }
+
+  function logistic(x) {
+    return 1 / (1 + Math.exp(-x));
+  }
+
+  function formatPercent(p, digits = 1) {
+    if (!Number.isFinite(p)) return "—";
+    return (p * 100).toFixed(digits) + "%";
+  }
+
+  function formatRatio(x, digits = 2) {
+    if (!Number.isFinite(x) || x <= 0) return "—";
+    return x.toFixed(digits);
+  }
+
+  function oddsRatio(a, b, c, d) {
+    // a=E1Y1, b=E1Y0, c=E0Y1, d=E0Y0
+    if (a === 0 || b === 0 || c === 0 || d === 0) {
+      a += 0.5; b += 0.5; c += 0.5; d += 0.5;
+    }
+    return (a * d) / (b * c);
+  }
+
+  // ---------- Confounding demo ----------
+
+  let confData = []; // stored simulated cohort
+
+  function simulateConfounding() {
+    const trueOrSlider = document.getElementById("trueOrSlider");
+    const confOrSlider = document.getElementById("confOrSlider");
+    const highTSlider = document.getElementById("highRiskTreatedSlider");
+    const highCSlider = document.getElementById("highRiskControlSlider");
+    const nInput = document.getElementById("confNSample");
+    const baselineRiskSlider = document.getElementById("baselineRiskSlider");
+
+    const trueOr = safeNumber(trueOrSlider.value) / 100; // 0.5–3.0
+    const confOr = safeNumber(confOrSlider.value) / 100; // 1.0–6.0
+    const pCHighTreat = safeNumber(highTSlider.value) / 100;
+    const pCHighControl = safeNumber(highCSlider.value) / 100;
+    let N = Math.floor(safeNumber(nInput.value));
+    if (N < 200) N = 200;
+    const baselineRisk = safeNumber(baselineRiskSlider.value) / 100; // 0.05–0.40
+
+    document.getElementById("trueOrDisplay").textContent = trueOr.toFixed(2);
+    document.getElementById("confOrDisplay").textContent = confOr.toFixed(2);
+    document.getElementById("highRiskTreatedDisplay").textContent =
+      (pCHighTreat * 100).toFixed(0) + "%";
+    document.getElementById("highRiskControlDisplay").textContent =
+      (pCHighControl * 100).toFixed(0) + "%";
+    document.getElementById("baselineRiskDisplay").textContent =
+      (baselineRisk * 100).toFixed(0) + "%";
+
+    // Logistic parameters
+    const betaE = Math.log(trueOr);
+    const betaC = Math.log(confOr);
+    const beta0 = Math.log(baselineRisk / (1 - baselineRisk)); // P(Y=1|E=0,C=0)=baseline
+
+    confData = [];
+    let treatedCount = 0;
+    let controlCount = 0;
+
+    for (let i = 0; i < N; i++) {
+      const E = Math.random() < 0.5 ? 1 : 0;
+      const pCHigh = E === 1 ? pCHighTreat : pCHighControl;
+      const C = Math.random() < pCHigh ? 1 : 0;
+      const logitP = beta0 + betaE * E + betaC * C;
+      const pY = logistic(logitP);
+      const Y = Math.random() < pY ? 1 : 0;
+      confData.push({ E, C, Y });
+      if (E === 1) treatedCount++; else controlCount++;
+    }
+
+    renderConfoundingResults({
+      trueOr,
+      confOr,
+      pCHighTreat,
+      pCHighControl,
+      N,
+      baselineRisk
+    });
+  }
+
+  function renderConfoundingResults(params) {
+    if (!confData.length) return;
+
+    const { trueOr } = params;
+
+    // Marginal 2x2 (crude)
+    let a = 0, b = 0, c = 0, d = 0;
+    // Stratified by C
+    let a1 = 0, b1 = 0, c1 = 0, d1 = 0; // C=1
+    let a0 = 0, b0 = 0, c0 = 0, d0 = 0; // C=0
+
+    // Confounder distributions & risks
+    let treated = 0, control = 0;
+    let treatedHigh = 0, treatedLow = 0;
+    let controlHigh = 0, controlLow = 0;
+    let treatedEvents = 0, controlEvents = 0;
+
+    confData.forEach(row => {
+      const { E, C, Y } = row;
+
+      if (E === 1) {
+        treated++;
+        if (C === 1) treatedHigh++; else treatedLow++;
+        if (Y === 1) treatedEvents++;
+      } else {
+        control++;
+        if (C === 1) controlHigh++; else controlLow++;
+        if (Y === 1) controlEvents++;
+      }
+
+      // crude 2x2
+      if (E === 1 && Y === 1) a++;
+      if (E === 1 && Y === 0) b++;
+      if (E === 0 && Y === 1) c++;
+      if (E === 0 && Y === 0) d++;
+
+      // stratified
+      if (C === 1) {
+        if (E === 1 && Y === 1) a1++;
+        if (E === 1 && Y === 0) b1++;
+        if (E === 0 && Y === 1) c1++;
+        if (E === 0 && Y === 0) d1++;
+      } else {
+        if (E === 1 && Y === 1) a0++;
+        if (E === 1 && Y === 0) b0++;
+        if (E === 0 && Y === 1) c0++;
+        if (E === 0 && Y === 0) d0++;
+      }
+    });
+
+    const crudeOR = oddsRatio(a, b, c, d);
+
+    // Stratified ORs
+    const orHigh = (a1 + b1 + c1 + d1) > 0 ? oddsRatio(a1, b1, c1, d1) : NaN;
+    const orLow  = (a0 + b0 + c0 + d0) > 0 ? oddsRatio(a0, b0, c0, d0) : NaN;
+
+    // Mantel-Haenszel OR (2 strata)
+    function mhNumeratorDenominator(a, b, c, d) {
+      const n = a + b + c + d;
+      if (n === 0) return { num: 0, den: 0 };
+      return {
+        num: (a * d) / n,
+        den: (b * c) / n
+      };
+    }
+
+    const mh1 = mhNumeratorDenominator(a1, b1, c1, d1);
+    const mh0 = mhNumeratorDenominator(a0, b0, c0, d0);
+    const mhNum = mh1.num + mh0.num;
+    const mhDen = mh1.den + mh0.den;
+    const mhOR = mhDen > 0 ? mhNum / mhDen : NaN;
+
+    const biasCrude = Number.isFinite(crudeOR) && Number.isFinite(trueOr)
+      ? ((crudeOR - trueOr) / trueOr) * 100
+      : NaN;
+    const biasAdj = Number.isFinite(mhOR) && Number.isFinite(trueOr)
+      ? ((mhOR - trueOr) / trueOr) * 100
+      : NaN;
+
+    const treatedRisk = treated > 0 ? treatedEvents / treated : NaN;
+    const controlRisk = control > 0 ? controlEvents / control : NaN;
+    const riskRatio = (Number.isFinite(treatedRisk) && Number.isFinite(controlRisk) && controlRisk > 0)
+      ? treatedRisk / controlRisk
+      : NaN;
+
+    const statsPanel = document.getElementById("confStatsPanel");
+    statsPanel.innerHTML = `
+      <div class="result-row">
+        <div class="result-label">True causal OR (target)</div>
+        <div class="result-value result-highlight">${formatRatio(trueOr)}</div>
+        <div class="result-note">
+          This is the OR used in the data-generating model for E → Y (no confounding).
+        </div>
+      </div>
+      <div class="result-row">
+        <div class="result-label">Crude OR (ignoring C)</div>
+        <div class="result-value">${formatRatio(crudeOR)}</div>
+        <div class="result-note">
+          Bias vs true: ${Number.isFinite(biasCrude) ? biasCrude.toFixed(1) + "%" : "—"}
+          ${Number.isFinite(biasCrude)
+            ? (biasCrude > 0
+              ? " (overestimates effect)."
+              : (biasCrude < 0 ? " (underestimates effect)." : " (no bias)."))
+            : ""
+          }
+        </div>
+      </div>
+      <div class="result-row">
+        <div class="result-label">Adjusted OR (Mantel–Haenszel)</div>
+        <div class="result-value result-highlight">${formatRatio(mhOR)}</div>
+        <div class="result-note">
+          Bias vs true: ${Number.isFinite(biasAdj) ? biasAdj.toFixed(1) + "%" : "—"}
+        </div>
+      </div>
+      <div class="result-row">
+        <div class="result-label">Stratum-specific ORs</div>
+        <div class="result-value">
+          High risk: ${formatRatio(orHigh)} · Low risk: ${formatRatio(orLow)}
+        </div>
+        <div class="result-note">
+          If there is no effect modification, these should both be close to the true OR.
+        </div>
+      </div>
+      <div class="result-row">
+        <div class="result-label">Risk ratio (treated vs control)</div>
+        <div class="result-value">${formatRatio(riskRatio)}</div>
+        <div class="result-note">
+          Overall event risk: treated ${formatPercent(treatedRisk)}, control ${formatPercent(controlRisk)}.
+        </div>
+      </div>
+      <div class="result-row">
+        <div class="result-label">Key message</div>
+        <div class="result-note">
+          Confounding arises because the confounder is associated with both exposure and outcome.
+          Adjustment (stratification/MH) tries to recover the causal contrast.
+        </div>
+      </div>
+    `;
+
+    // Summary table: confounder distribution
+    const treatedHighPct = treated > 0 ? treatedHigh / treated : NaN;
+    const treatedLowPct = treated > 0 ? treatedLow / treated : NaN;
+    const controlHighPct = control > 0 ? controlHigh / control : NaN;
+    const controlLowPct = control > 0 ? controlLow / control : NaN;
+
+    document.getElementById("cellTreatedHigh").textContent =
+      `${treatedHigh} (${formatPercent(treatedHighPct)})`;
+    document.getElementById("cellTreatedLow").textContent =
+      `${treatedLow} (${formatPercent(treatedLowPct)})`;
+    document.getElementById("cellTreatedRisk").textContent =
+      `${treatedEvents}/${treated} (${formatPercent(treatedRisk)})`;
+
+    document.getElementById("cellControlHigh").textContent =
+      `${controlHigh} (${formatPercent(controlHighPct)})`;
+    document.getElementById("cellControlLow").textContent =
+      `${controlLow} (${formatPercent(controlLowPct)})`;
+    document.getElementById("cellControlRisk").textContent =
+      `${controlEvents}/${control} (${formatPercent(controlRisk)})`;
+
+    // Strata 2x2 summary (E vs Y within each C)
+    const highTotal = a1 + b1 + c1 + d1;
+    const lowTotal = a0 + b0 + c0 + d0;
+
+    document.getElementById("cellHighEvent").textContent =
+      `E=1: ${a1} · E=0: ${c1}`;
+    document.getElementById("cellHighNoEvent").textContent =
+      `E=1: ${b1} · E=0: ${d1}`;
+    document.getElementById("cellHighOR").textContent = formatRatio(orHigh);
+
+    document.getElementById("cellLowEvent").textContent =
+      `E=1: ${a0} · E=0: ${c0}`;
+    document.getElementById("cellLowNoEvent").textContent =
+      `E=1: ${b0} · E=0: ${d0}`;
+    document.getElementById("cellLowOR").textContent = formatRatio(orLow);
+  }
+
+  // ---------- Attrition / selection bias toy ----------
+
+  function updateAttrition() {
+    const NT = Math.max(1, Math.floor(safeNumber(document.getElementById("attrNTreat").value)));
+    const NC = Math.max(1, Math.floor(safeNumber(document.getElementById("attrNControl").value)));
+    const eventsTObs = Math.max(0, Math.floor(safeNumber(document.getElementById("attrEventsTreatObs").value)));
+    const eventsCObs = Math.max(0, Math.floor(safeNumber(document.getElementById("attrEventsControlObs").value)));
+
+    let lostTPct = safeNumber(document.getElementById("attrLostTreatSlider").value);
+    let lostCPct = safeNumber(document.getElementById("attrLostControlSlider").value);
+    if (lostTPct < 0) lostTPct = 0;
+    if (lostTPct > 100) lostTPct = 100;
+    if (lostCPct < 0) lostCPct = 0;
+    if (lostCPct > 100) lostCPct = 100;
+
+    const riskLostTPct = safeNumber(document.getElementById("attrRiskLostTreatSlider").value);
+    const riskLostCPct = safeNumber(document.getElementById("attrRiskLostControlSlider").value);
+
+    document.getElementById("attrLostTreatDisplay").textContent = lostTPct.toFixed(0) + "%";
+    document.getElementById("attrLostControlDisplay").textContent = lostCPct.toFixed(0) + "%";
+    document.getElementById("attrRiskLostTreatDisplay").textContent = riskLostTPct.toFixed(0) + "%";
+    document.getElementById("attrRiskLostControlDisplay").textContent = riskLostCPct.toFixed(0) + "%";
+
+    const lostT = Math.round((lostTPct / 100) * NT);
+    const lostC = Math.round((lostCPct / 100) * NC);
+    const followedT = NT - lostT;
+    const followedC = NC - lostC;
+
+    // clamp observed events to followed-up counts
+    const E_T_obs = Math.min(eventsTObs, followedT);
+    const E_C_obs = Math.min(eventsCObs, followedC);
+
+    const riskTobs = followedT > 0 ? E_T_obs / followedT : NaN;
+    const riskCobs = followedC > 0 ? E_C_obs / followedC : NaN;
+    const rrObs = (Number.isFinite(riskTobs) && Number.isFinite(riskCobs) && riskCobs > 0)
+      ? riskTobs / riskCobs
+      : NaN;
+
+    // Assumed events among lost
+    const riskLostT = riskLostTPct / 100;
+    const riskLostC = riskLostCPct / 100;
+    const E_T_lost_assumed = Math.round(riskLostT * lostT);
+    const E_C_lost_assumed = Math.round(riskLostC * lostC);
+
+    const E_T_total_assumed = E_T_obs + E_T_lost_assumed;
+    const E_C_total_assumed = E_C_obs + E_C_lost_assumed;
+
+    const riskT_assumed = E_T_total_assumed / NT;
+    const riskC_assumed = E_C_total_assumed / NC;
+    const rrAssumed = (riskC_assumed > 0) ? riskT_assumed / riskC_assumed : NaN;
+
+    // Best- and worst-case bounds (for treatment as event-reducing)
+    // Best case: lostT all no event, lostC all event
+    const E_T_best = E_T_obs; // none among lost
+    const E_C_best = E_C_obs + lostC;
+    const riskT_best = E_T_best / NT;
+    const riskC_best = E_C_best / NC;
+    const rrBest = (riskC_best > 0) ? riskT_best / riskC_best : NaN;
+
+    // Worst case: lostT all event, lostC all no event
+    const E_T_worst = E_T_obs + lostT;
+    const E_C_worst = E_C_obs;
+    const riskT_worst = E_T_worst / NT;
+    const riskC_worst = E_C_worst / NC;
+    const rrWorst = (riskC_worst > 0) ? riskT_worst / riskC_worst : NaN;
+
+    const statsPanel = document.getElementById("attrStatsPanel");
+    statsPanel.innerHTML = `
+      <div class="result-row">
+        <div class="result-label">Observed data (ignoring loss)</div>
+        <div class="result-value">
+          Treatment: ${E_T_obs}/${followedT} (${formatPercent(riskTobs)}) ·
+          Control: ${E_C_obs}/${followedC} (${formatPercent(riskCobs)})
+        </div>
+        <div class="result-note">
+          Naïve risk ratio (T vs C): ${formatRatio(rrObs)}
+        </div>
+      </div>
+      <div class="result-row">
+        <div class="result-label">Loss to follow-up</div>
+        <div class="result-value">
+          Treatment: ${lostT}/${NT} (${lostTPct.toFixed(0)}%) ·
+          Control: ${lostC}/${NC} (${lostCPct.toFixed(0)}%)
+        </div>
+        <div class="result-note">
+          High and differential loss weakens the credibility of the observed effect.
+        </div>
+      </div>
+      <div class="result-row">
+        <div class="result-label">Under your assumptions</div>
+        <div class="result-value result-highlight">
+          Risk(T): ${formatPercent(riskT_assumed)} · Risk(C): ${formatPercent(riskC_assumed)}<br/>
+          RR<sub>assumed</sub> = ${formatRatio(rrAssumed)}
+        </div>
+        <div class="result-note">
+          We assumed event risk among lost: ${riskLostTPct.toFixed(0)}% (T) vs ${riskLostCPct.toFixed(0)}% (C).
+        </div>
+      </div>
+      <div class="result-row">
+        <div class="result-label">Best-case bound (for treatment benefit)</div>
+        <div class="result-value">
+          RR<sub>best</sub> = ${formatRatio(rrBest)}
+        </div>
+        <div class="result-note">
+          Assumes all lost patients in treatment had no event; all lost in control had events.
+        </div>
+      </div>
+      <div class="result-row">
+        <div class="result-label">Worst-case bound (for treatment)</div>
+        <div class="result-value result-bad">
+          RR<sub>worst</sub> = ${formatRatio(rrWorst)}
+        </div>
+        <div class="result-note">
+          Assumes all lost patients in treatment had events; all lost in control had no events.
+        </div>
+      </div>
+      <div class="result-row">
+        <div class="result-label">Interpretation</div>
+        <div class="result-note">
+          If clinically plausible assumptions push the RR close to 1 (or even reverse it),
+          the trial’s conclusion is fragile to attrition bias.
+        </div>
+      </div>
+    `;
+  }
+
+  // ---------- Init ----------
+
+  document.addEventListener("DOMContentLoaded", () => {
+    // Confounding demo
+    document.getElementById("confSimBtn").addEventListener("click", simulateConfounding);
+    ["trueOrSlider", "confOrSlider", "highRiskTreatedSlider",
+     "highRiskControlSlider", "baselineRiskSlider"].forEach(id => {
+      document.getElementById(id).addEventListener("input", simulateConfounding);
+    });
+    document.getElementById("confNSample").addEventListener("input", simulateConfounding);
+
+    // Attrition demo
+    ["attrLostTreatSlider", "attrLostControlSlider",
+     "attrRiskLostTreatSlider", "attrRiskLostControlSlider",
+     "attrNTreat", "attrNControl", "attrEventsTreatObs",
+     "attrEventsControlObs"].forEach(id => {
+      document.getElementById(id).addEventListener("input", updateAttrition);
+    });
+    document.getElementById("attrRecalcBtn").addEventListener("click", updateAttrition);
+
+    // Initial renders
+    simulateConfounding();
+    updateAttrition();
+  });
+</script>
+</body>
+</html>

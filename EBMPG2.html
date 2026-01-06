@@ -1,0 +1,867 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Effect Sizes & Risk Measures Playground</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    :root {
+      --bg: #0f172a;
+      --bg-elevated: #020617;
+      --card-bg: #020617;
+      --accent: #38bdf8;
+      --accent-soft: rgba(56, 189, 248, 0.15);
+      --accent-strong: #0ea5e9;
+      --text: #e5e7eb;
+      --text-muted: #9ca3af;
+      --danger: #f97373;
+      --warning: #fbbf24;
+      --success: #22c55e;
+      --radius-lg: 1.25rem;
+      --shadow-soft: 0 18px 45px rgba(15, 23, 42, 0.9);
+      --border-subtle: 1px solid rgba(148, 163, 184, 0.22);
+      --font-sans: system-ui, -apple-system, BlinkMacSystemFont, "SF Pro Text",
+                   "Segoe UI", sans-serif;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html, body {
+      margin: 0;
+      padding: 0;
+      background: radial-gradient(circle at top left, #1f2937 0, #020617 45%, #000 100%);
+      color: var(--text);
+      font-family: var(--font-sans);
+    }
+
+    body {
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: stretch;
+      padding: 24px;
+    }
+
+    .app-shell {
+      max-width: 1200px;
+      width: 100%;
+      margin: auto;
+      background: linear-gradient(145deg, rgba(15, 23, 42, 0.96), rgba(15, 23, 42, 0.92));
+      border-radius: 1.5rem;
+      box-shadow: var(--shadow-soft);
+      border: 1px solid rgba(148, 163, 184, 0.35);
+      padding: 24px 24px 28px;
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+      backdrop-filter: blur(12px);
+    }
+
+    @media (max-width: 900px) {
+      body {
+        padding: 12px;
+      }
+      .app-shell {
+        padding: 18px 14px 22px;
+        border-radius: 1.1rem;
+      }
+    }
+
+    header {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      gap: 12px;
+      align-items: flex-start;
+    }
+
+    .title-block h1 {
+      font-size: clamp(1.6rem, 2.1vw, 1.9rem);
+      margin: 0;
+      letter-spacing: 0.02em;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .title-pill {
+      font-size: 0.8rem;
+      padding: 2px 10px;
+      border-radius: 999px;
+      border: 1px solid rgba(148, 163, 184, 0.4);
+      color: var(--text-muted);
+    }
+
+    .subtitle {
+      font-size: 0.9rem;
+      color: var(--text-muted);
+      margin-top: 4px;
+      max-width: 700px;
+    }
+
+    .tagline {
+      font-size: 0.78rem;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      color: var(--accent);
+      background: rgba(56, 189, 248, 0.1);
+      border-radius: 999px;
+      padding: 4px 12px;
+      border: 1px solid rgba(56, 189, 248, 0.35);
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .tagline-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 999px;
+      background: var(--accent);
+      box-shadow: 0 0 10px rgba(56, 189, 248, 0.85);
+    }
+
+    h2 {
+      margin: 0 0 10px;
+      font-size: 1.1rem;
+      letter-spacing: 0.02em;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 6px;
+    }
+
+    h2 span.label {
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.14em;
+      color: var(--text-muted);
+    }
+
+    .card {
+      background: radial-gradient(circle at top right,
+          rgba(56, 189, 248, 0.06) 0,
+          rgba(15, 23, 42, 0.98) 40%,
+          #020617 100%);
+      border-radius: var(--radius-lg);
+      border: var(--border-subtle);
+      padding: 14px 16px 16px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .card::before {
+      content: "";
+      position: absolute;
+      inset: -120px;
+      background-image: radial-gradient(circle at 0 -40px,
+        rgba(56, 189, 248, 0.12),
+        transparent 60%);
+      opacity: 0.7;
+      pointer-events: none;
+    }
+
+    .card-inner {
+      position: relative;
+      z-index: 1;
+    }
+
+    main {
+      display: grid;
+      grid-template-columns: minmax(0, 1.4fr) minmax(0, 1.1fr);
+      gap: 16px;
+    }
+
+    @media (max-width: 1000px) {
+      main {
+        grid-template-columns: minmax(0, 1fr);
+      }
+    }
+
+    /* 2x2 Table */
+
+    .grid-2col {
+      display: grid;
+      grid-template-columns: minmax(0, 1.2fr) minmax(0, 1.1fr);
+      gap: 12px;
+    }
+
+    @media (max-width: 700px) {
+      .grid-2col {
+        grid-template-columns: minmax(0, 1fr);
+      }
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.83rem;
+      border-radius: 0.9rem;
+      overflow: hidden;
+      border: 1px solid rgba(148, 163, 184, 0.45);
+      background: rgba(15, 23, 42, 0.98);
+    }
+
+    th, td {
+      border-bottom: 1px solid rgba(55, 65, 81, 0.85);
+      padding: 6px 8px;
+      text-align: center;
+    }
+
+    th {
+      background: rgba(15, 23, 42, 0.96);
+      font-weight: 500;
+    }
+
+    tr:last-child td {
+      border-bottom: none;
+    }
+
+    th.col-header {
+      font-size: 0.8rem;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      color: var(--text-muted);
+    }
+
+    td.row-header {
+      font-size: 0.78rem;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      color: var(--text-muted);
+      text-align: left;
+      background: rgba(15, 23, 42, 0.9);
+    }
+
+    input[type="number"] {
+      width: 100%;
+      padding: 4px 6px;
+      border-radius: 0.5rem;
+      border: 1px solid rgba(148, 163, 184, 0.6);
+      background: rgba(15, 23, 42, 0.98);
+      color: var(--text);
+      font-size: 0.83rem;
+      text-align: right;
+    }
+
+    input[type="number"]:focus {
+      outline: none;
+      border-color: rgba(56, 189, 248, 0.9);
+      box-shadow: 0 0 0 1px rgba(56, 189, 248, 0.4);
+    }
+
+    input[type="range"] {
+      width: 100%;
+    }
+
+    .hint {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      margin-bottom: 6px;
+    }
+
+    .results-card {
+      border-radius: 1rem;
+      border: 1px solid rgba(148, 163, 184, 0.5);
+      background: rgba(15, 23, 42, 0.98);
+      padding: 8px 10px 10px;
+      font-size: 0.83rem;
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 6px 10px;
+    }
+
+    @media (max-width: 600px) {
+      .results-card {
+        grid-template-columns: minmax(0, 1fr);
+      }
+    }
+
+    .result-row {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .result-label {
+      font-size: 0.78rem;
+      text-transform: uppercase;
+      letter-spacing: 0.14em;
+      color: var(--text-muted);
+    }
+
+    .result-value {
+      font-family: "SF Mono", ui-monospace, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      font-size: 0.88rem;
+    }
+
+    .result-note {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+    }
+
+    .result-highlight {
+      color: var(--accent-strong);
+    }
+
+    .result-bad {
+      color: #fecaca;
+    }
+
+    .grid-visuals {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+      gap: 10px;
+      margin-top: 10px;
+    }
+
+    @media (max-width: 700px) {
+      .grid-visuals {
+        grid-template-columns: minmax(0, 1fr);
+      }
+    }
+
+    .visual-card {
+      border-radius: 0.9rem;
+      border: 1px solid rgba(148, 163, 184, 0.45);
+      background: rgba(15, 23, 42, 0.96);
+      padding: 8px 8px 9px;
+      font-size: 0.78rem;
+    }
+
+    .visual-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      gap: 8px;
+      margin-bottom: 4px;
+    }
+
+    .visual-title {
+      font-size: 0.82rem;
+      font-weight: 500;
+    }
+
+    .visual-sub {
+      font-size: 0.73rem;
+      color: var(--text-muted);
+    }
+
+    .grid-100 {
+      display: grid;
+      grid-template-columns: repeat(10, 1fr);
+      gap: 2px;
+      margin-top: 4px;
+    }
+
+    .grid-cell {
+      width: 100%;
+      padding-bottom: 100%;
+      border-radius: 3px;
+      position: relative;
+      overflow: hidden;
+      border: 1px solid rgba(55, 65, 81, 0.5);
+      background: rgba(15, 23, 42, 0.95);
+    }
+
+    .grid-cell-inner {
+      position: absolute;
+      inset: 0;
+    }
+
+    .grid-cell.event {
+      background: radial-gradient(circle at 30% 20%, rgba(248, 113, 113, 0.9), rgba(127, 29, 29, 0.95));
+      border-color: rgba(248, 113, 113, 0.9);
+    }
+
+    .grid-cell.no-event {
+      background: radial-gradient(circle at 30% 20%, rgba(22, 163, 74, 0.8), rgba(5, 46, 22, 0.95));
+      border-color: rgba(22, 163, 74, 0.85);
+    }
+
+    .grid-legend {
+      margin-top: 4px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      font-size: 0.72rem;
+      color: var(--text-muted);
+      align-items: center;
+    }
+
+    .legend-swatch {
+      width: 10px;
+      height: 10px;
+      border-radius: 2px;
+      border: 1px solid rgba(148, 163, 184, 0.6);
+    }
+
+    .legend-swatch.event {
+      background: radial-gradient(circle at 30% 20%, rgba(248, 113, 113, 0.9), rgba(127, 29, 29, 0.95));
+      border-color: rgba(248, 113, 113, 0.9);
+    }
+
+    .legend-swatch.no-event {
+      background: radial-gradient(circle at 30% 20%, rgba(22, 163, 74, 0.8), rgba(5, 46, 22, 0.95));
+      border-color: rgba(22, 163, 74, 0.85);
+    }
+
+    .pill-soft {
+      font-size: 0.72rem;
+      padding: 2px 7px;
+      border-radius: 999px;
+      border: 1px solid rgba(148, 163, 184, 0.55);
+      background: rgba(15, 23, 42, 0.95);
+      color: var(--text-muted);
+    }
+
+    /* Slider demo */
+
+    .slider-row {
+      display: grid;
+      grid-template-columns: minmax(0, 1.3fr) minmax(0, 0.7fr);
+      gap: 8px;
+      align-items: center;
+      font-size: 0.82rem;
+    }
+
+    @media (max-width: 700px) {
+      .slider-row {
+        grid-template-columns: minmax(0, 1fr);
+      }
+    }
+
+    .slider-label {
+      font-size: 0.8rem;
+      text-transform: uppercase;
+      letter-spacing: 0.14em;
+      color: var(--text-muted);
+      margin-bottom: 2px;
+    }
+
+    .slider-display {
+      font-family: "SF Mono", ui-monospace, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      font-size: 0.86rem;
+    }
+
+    .big-number {
+      font-size: 1.2rem;
+      font-family: "SF Mono", ui-monospace, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+    }
+
+    .big-number.good {
+      color: var(--accent-strong);
+    }
+
+    .big-number.bad {
+      color: #fecaca;
+    }
+
+    footer {
+      margin-top: 8px;
+      font-size: 0.72rem;
+      color: var(--text-muted);
+      display: flex;
+      justify-content: space-between;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+  </style>
+</head>
+<body>
+<div class="app-shell">
+  <header>
+    <div class="title-block">
+      <h1>
+        Effect Sizes &amp; Risk Measures Playground
+        <span class="title-pill">2×2 tables · RR · OR · NNT</span>
+      </h1>
+      <div class="subtitle">
+        Change the counts or baseline risk and watch the effect sizes and NNT update in real time.
+        Perfect for live explanation of “absolute vs relative risk” and why NNT depends on baseline risk.
+      </div>
+    </div>
+    <div class="tagline">
+      <span class="tagline-dot"></span>
+      Interactive EBM stats demo
+    </div>
+  </header>
+
+  <main>
+    <!-- LEFT: 2x2 Table Builder -->
+    <section class="card">
+      <div class="card-inner">
+        <h2>
+          2×2 Table Builder
+          <span class="label">Therapy / prognosis effect sizes</span>
+        </h2>
+        <div class="hint">
+          Enter counts for events and non-events in treated and control groups.
+          The app calculates risks, ARR, RR, OR and NNT/NNH.
+        </div>
+
+        <div class="grid-2col">
+          <div>
+            <table>
+              <thead>
+                <tr>
+                  <th></th>
+                  <th class="col-header">Event</th>
+                  <th class="col-header">No event</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td class="row-header">Treated</td>
+                  <td>
+                    <input type="number" id="a" min="0" step="1" value="20" />
+                  </td>
+                  <td>
+                    <input type="number" id="b" min="0" step="1" value="80" />
+                  </td>
+                </tr>
+                <tr>
+                  <td class="row-header">Control</td>
+                  <td>
+                    <input type="number" id="c" min="0" step="1" value="30" />
+                  </td>
+                  <td>
+                    <input type="number" id="d" min="0" step="1" value="70" />
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+            <div class="hint">
+              Tip: Ask your audience for a plausible 2×2 table from a real RCT and plug it in.
+            </div>
+          </div>
+
+          <div>
+            <div class="results-card" id="statsPanel">
+              <!-- Filled by JS -->
+            </div>
+          </div>
+        </div>
+
+        <div class="grid-visuals">
+          <div class="visual-card">
+            <div class="visual-header">
+              <div class="visual-title">Treated group (per 100)</div>
+              <div class="visual-sub" id="treatedRiskLabel"></div>
+            </div>
+            <div class="grid-100" id="treatedGrid"></div>
+            <div class="grid-legend">
+              <span class="pill-soft">Each square = 1 out of 100 treated patients</span>
+              <span><span class="legend-swatch event"></span> Event</span>
+              <span><span class="legend-swatch no-event"></span> No event</span>
+            </div>
+          </div>
+
+          <div class="visual-card">
+            <div class="visual-header">
+              <div class="visual-title">Control group (per 100)</div>
+              <div class="visual-sub" id="controlRiskLabel"></div>
+            </div>
+            <div class="grid-100" id="controlGrid"></div>
+            <div class="grid-legend">
+              <span class="pill-soft">Compare absolute risks, not just RR</span>
+              <span><span class="legend-swatch event"></span> Event</span>
+              <span><span class="legend-swatch no-event"></span> No event</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- RIGHT: Same relative, different absolute -->
+    <section class="card">
+      <div class="card-inner">
+        <h2>
+          “Same Relative, Different Absolute” Demo
+          <span class="label">Baseline risk · Fixed relative risk</span>
+        </h2>
+        <div class="hint">
+          Move the baseline risk slider (control group). Keep the same relative risk and see how
+          the absolute risk reduction and NNT change.
+        </div>
+
+        <div class="slider-row" style="margin-top:4px;">
+          <div>
+            <div class="slider-label">Baseline risk (control) · % with event</div>
+            <input type="range" id="baselineRiskSlider" min="1" max="60" value="20" />
+          </div>
+          <div class="slider-display" id="baselineRiskDisplay"></div>
+        </div>
+
+        <div class="slider-row" style="margin-top:8px;">
+          <div>
+            <div class="slider-label">Relative risk (treated vs control)</div>
+            <input type="range" id="relativeRiskSlider" min="30" max="110" value="75" />
+          </div>
+          <div class="slider-display" id="relativeRiskDisplay"></div>
+        </div>
+
+        <div class="grid-2col" style="margin-top:10px;">
+          <div class="results-card" id="sliderStatsPanel">
+            <!-- filled by JS -->
+          </div>
+          <div class="visual-card">
+            <div class="visual-header">
+              <div class="visual-title">Per 100 patients: control vs treated</div>
+              <div class="visual-sub">Same RR, very different ARR/NNT as baseline changes</div>
+            </div>
+            <div class="grid-visuals">
+              <div>
+                <div class="visual-sub">Control</div>
+                <div class="grid-100" id="sliderControlGrid"></div>
+              </div>
+              <div>
+                <div class="visual-sub">Treated</div>
+                <div class="grid-100" id="sliderTreatedGrid"></div>
+              </div>
+            </div>
+            <div class="grid-legend">
+              <span class="pill-soft">Keep RR fixed; change baseline risk</span>
+              <span><span class="legend-swatch event"></span> Event</span>
+              <span><span class="legend-swatch no-event"></span> No event</span>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <div>
+      Teaching trick: ask “Is RR=0.75 always equally impressive?” then move the baseline slider to show how NNT explodes at low risk.
+    </div>
+    <div>
+      All logic runs locally in your browser · no server, no internet.
+    </div>
+  </footer>
+</div>
+
+<script>
+  // ---------- Utility functions ----------
+
+  function safeNumber(value) {
+    const n = Number(value);
+    return Number.isFinite(n) ? n : 0;
+  }
+
+  function formatPercent(p) {
+    if (!Number.isFinite(p)) return "—";
+    return (p * 100).toFixed(1) + "%";
+  }
+
+  function formatRatio(x) {
+    if (!Number.isFinite(x)) return "—";
+    return x.toFixed(2);
+  }
+
+  function formatNNT(arr) {
+    if (!Number.isFinite(arr) || arr === 0) return { label: "—", type: "none", explanation: "No difference in absolute risk." };
+
+    const nnt = Math.abs(1 / arr);
+    if (!Number.isFinite(nnt) || nnt <= 0) {
+      return { label: "∞", type: "none", explanation: "No meaningful difference in risk." };
+    }
+    const rounded = Math.round(nnt);
+    if (arr > 0) {
+      return {
+        label: "NNT ≈ " + rounded,
+        type: "good",
+        explanation: "Treat " + rounded + " patients to prevent 1 additional event."
+      };
+    } else {
+      return {
+        label: "NNH ≈ " + rounded,
+        type: "bad",
+        explanation: "Treat " + rounded + " patients to cause 1 additional harmful event."
+      };
+    }
+  }
+
+  function addContinuity(a, b, c, d) {
+    // Handle zero cells for OR; add 0.5 to each cell if any zero present.
+    if (a === 0 || b === 0 || c === 0 || d === 0) {
+      return [a + 0.5, b + 0.5, c + 0.5, d + 0.5];
+    }
+    return [a, b, c, d];
+  }
+
+  // ---------- 100 grid rendering ----------
+
+  function render100Grid(container, risk) {
+    const elem = document.getElementById(container);
+    if (!elem) return;
+    elem.innerHTML = "";
+    if (!Number.isFinite(risk) || risk < 0) risk = 0;
+    if (risk > 1) risk = 1;
+    const events = Math.round(risk * 100);
+    for (let i = 0; i < 100; i++) {
+      const cell = document.createElement("div");
+      cell.className = "grid-cell " + (i < events ? "event" : "no-event");
+      const inner = document.createElement("div");
+      inner.className = "grid-cell-inner";
+      cell.appendChild(inner);
+      elem.appendChild(cell);
+    }
+  }
+
+  // ---------- 2x2 Table Builder ----------
+
+  function update2x2() {
+    const a = safeNumber(document.getElementById("a").value);
+    const b = safeNumber(document.getElementById("b").value);
+    const c = safeNumber(document.getElementById("c").value);
+    const d = safeNumber(document.getElementById("d").value);
+
+    const treatedTotal = a + b;
+    const controlTotal = c + d;
+
+    const riskT = treatedTotal > 0 ? a / treatedTotal : NaN;
+    const riskC = controlTotal > 0 ? c / controlTotal : NaN;
+
+    const arr = (Number.isFinite(riskC) && Number.isFinite(riskT)) ? (riskC - riskT) : NaN;
+    const rr = (Number.isFinite(riskC) && riskC > 0 && Number.isFinite(riskT)) ? (riskT / riskC) : NaN;
+    const rrr = (Number.isFinite(rr)) ? (1 - rr) : NaN;
+
+    const [a2, b2, c2, d2] = addContinuity(a, b, c, d);
+    const or = (a2 * d2 > 0 && b2 * c2 > 0) ? (a2 * d2) / (b2 * c2) : NaN;
+
+    const nntInfo = formatNNT(arr);
+
+    const statsPanel = document.getElementById("statsPanel");
+    statsPanel.innerHTML = `
+      <div class="result-row">
+        <div class="result-label">Risk in treated</div>
+        <div class="result-value">${formatPercent(riskT)}</div>
+        <div class="result-note">a / (a + b) = ${treatedTotal > 0 ? a + " / " + treatedTotal : "—"}</div>
+      </div>
+      <div class="result-row">
+        <div class="result-label">Risk in control</div>
+        <div class="result-value">${formatPercent(riskC)}</div>
+        <div class="result-note">c / (c + d) = ${controlTotal > 0 ? c + " / " + controlTotal : "—"}</div>
+      </div>
+      <div class="result-row">
+        <div class="result-label">Absolute risk difference (ARR)</div>
+        <div class="result-value result-highlight">${Number.isFinite(arr) ? (arr * 100).toFixed(1) + " percentage points" : "—"}</div>
+        <div class="result-note">Control risk − treated risk</div>
+      </div>
+      <div class="result-row">
+        <div class="result-label">Relative risk (RR)</div>
+        <div class="result-value">${formatRatio(rr)}</div>
+        <div class="result-note">Risk treated ÷ Risk control</div>
+      </div>
+      <div class="result-row">
+        <div class="result-label">Relative risk reduction (RRR)</div>
+        <div class="result-value">${Number.isFinite(rrr) ? (rrr * 100).toFixed(1) + "%" : "—"}</div>
+        <div class="result-note">1 − RR</div>
+      </div>
+      <div class="result-row">
+        <div class="result-label">Odds ratio (OR)*</div>
+        <div class="result-value">${formatRatio(or)}</div>
+        <div class="result-note">(${a2.toFixed(1)} × ${d2.toFixed(1)}) / (${b2.toFixed(1)} × ${c2.toFixed(1)})</div>
+      </div>
+      <div class="result-row">
+        <div class="result-label">NNT / NNH</div>
+        <div class="result-value ${nntInfo.type === "good" ? "result-highlight" : (nntInfo.type === "bad" ? "result-bad" : "")}">
+          ${nntInfo.label}
+        </div>
+        <div class="result-note">${nntInfo.explanation}</div>
+      </div>
+      <div class="result-row">
+        <div class="result-label">Interpretation</div>
+        <div class="result-note">
+          Use ARR and NNT for bedside conversations; RR and OR are useful for comparing across populations.
+        </div>
+      </div>
+    `;
+
+    document.getElementById("treatedRiskLabel").textContent =
+      Number.isFinite(riskT) ? "Risk ≈ " + formatPercent(riskT) : "Risk not defined";
+    document.getElementById("controlRiskLabel").textContent =
+      Number.isFinite(riskC) ? "Risk ≈ " + formatPercent(riskC) : "Risk not defined";
+
+    render100Grid("treatedGrid", riskT);
+    render100Grid("controlGrid", riskC);
+  }
+
+  // ---------- Slider demo ----------
+
+  function updateSliderDemo() {
+    const baselineSlider = document.getElementById("baselineRiskSlider");
+    const rrSlider = document.getElementById("relativeRiskSlider");
+    const baselinePercent = safeNumber(baselineSlider.value);
+    const rrRaw = safeNumber(rrSlider.value) / 100; // slider 30–110 => 0.3–1.1
+
+    const riskC = baselinePercent / 100;
+    const riskT = riskC * rrRaw;
+
+    const arr = riskC - riskT;
+    const nntInfo = formatNNT(arr);
+
+    const baselineDisp = document.getElementById("baselineRiskDisplay");
+    const rrDisp = document.getElementById("relativeRiskDisplay");
+    baselineDisp.innerHTML = `
+      <span class="big-number">${baselinePercent.toFixed(0)}%</span>
+      <span style="font-size:0.78rem; color:var(--text-muted);">of control patients experience the event.</span>
+    `;
+    rrDisp.innerHTML = `
+      <span class="big-number">${rrRaw.toFixed(2)}</span>
+      <span style="font-size:0.78rem; color:var(--text-muted);">relative risk (treated vs control)</span>
+    `;
+
+    const statsPanel = document.getElementById("sliderStatsPanel");
+    statsPanel.innerHTML = `
+      <div class="result-row">
+        <div class="result-label">Risk with control</div>
+        <div class="result-value">${formatPercent(riskC)}</div>
+        <div class="result-note">Baseline event rate in the comparison group.</div>
+      </div>
+      <div class="result-row">
+        <div class="result-label">Risk with treatment</div>
+        <div class="result-value">${formatPercent(riskT)}</div>
+        <div class="result-note">Baseline risk × RR</div>
+      </div>
+      <div class="result-row">
+        <div class="result-label">Absolute risk reduction (ARR)</div>
+        <div class="result-value result-highlight">
+          ${Number.isFinite(arr) ? (arr * 100).toFixed(1) + " percentage points" : "—"}
+        </div>
+        <div class="result-note">Control risk − treated risk</div>
+      </div>
+      <div class="result-row">
+        <div class="result-label">NNT / NNH</div>
+        <div class="result-value ${nntInfo.type === "good" ? "good big-number" : (nntInfo.type === "bad" ? "bad big-number" : "")}">
+          ${nntInfo.label}
+        </div>
+        <div class="result-note">${nntInfo.explanation}</div>
+      </div>
+    `;
+
+    render100Grid("sliderControlGrid", riskC);
+    render100Grid("sliderTreatedGrid", riskT);
+  }
+
+  // ---------- Init ----------
+
+  document.addEventListener("DOMContentLoaded", () => {
+    ["a", "b", "c", "d"].forEach(id => {
+      document.getElementById(id).addEventListener("input", update2x2);
+    });
+
+    document.getElementById("baselineRiskSlider").addEventListener("input", updateSliderDemo);
+    document.getElementById("relativeRiskSlider").addEventListener("input", updateSliderDemo);
+
+    // initial render
+    update2x2();
+    updateSliderDemo();
+  });
+</script>
+</body>
+</html>

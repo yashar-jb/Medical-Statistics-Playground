@@ -1,0 +1,1206 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Survival Curves & Correlation Playground</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    :root {
+      --bg: #0f172a;
+      --bg-elevated: #020617;
+      --card-bg: #020617;
+      --accent: #38bdf8;
+      --accent-soft: rgba(56, 189, 248, 0.15);
+      --accent-strong: #0ea5e9;
+      --text: #e5e7eb;
+      --text-muted: #9ca3af;
+      --danger: #f97373;
+      --warning: #fbbf24;
+      --success: #22c55e;
+      --radius-lg: 1.25rem;
+      --shadow-soft: 0 18px 45px rgba(15, 23, 42, 0.9);
+      --border-subtle: 1px solid rgba(148, 163, 184, 0.22);
+      --font-sans: system-ui, -apple-system, BlinkMacSystemFont, "SF Pro Text",
+                   "Segoe UI", sans-serif;
+    }
+
+    * { box-sizing: border-box; }
+
+    html, body {
+      margin: 0;
+      padding: 0;
+      background: radial-gradient(circle at top left, #1f2937 0, #020617 45%, #000 100%);
+      color: var(--text);
+      font-family: var(--font-sans);
+    }
+
+    body {
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: stretch;
+      padding: 24px;
+    }
+
+    .app-shell {
+      max-width: 1200px;
+      width: 100%;
+      margin: auto;
+      background: linear-gradient(145deg, rgba(15, 23, 42, 0.96), rgba(15, 23, 42, 0.92));
+      border-radius: 1.5rem;
+      box-shadow: var(--shadow-soft);
+      border: 1px solid rgba(148, 163, 184, 0.35);
+      padding: 24px 24px 28px;
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+      backdrop-filter: blur(12px);
+    }
+
+    @media (max-width: 900px) {
+      body { padding: 12px; }
+      .app-shell {
+        padding: 18px 14px 22px;
+        border-radius: 1.1rem;
+      }
+    }
+
+    header {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      gap: 12px;
+      align-items: flex-start;
+    }
+
+    .title-block h1 {
+      font-size: clamp(1.6rem, 2.1vw, 1.9rem);
+      margin: 0;
+      letter-spacing: 0.02em;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .title-pill {
+      font-size: 0.8rem;
+      padding: 2px 10px;
+      border-radius: 999px;
+      border: 1px solid rgba(148, 163, 184, 0.4);
+      color: var(--text-muted);
+    }
+
+    .subtitle {
+      font-size: 0.9rem;
+      color: var(--text-muted);
+      margin-top: 4px;
+      max-width: 780px;
+    }
+
+    .tagline {
+      font-size: 0.78rem;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      color: var(--accent);
+      background: rgba(56, 189, 248, 0.1);
+      border-radius: 999px;
+      padding: 4px 12px;
+      border: 1px solid rgba(56, 189, 248, 0.35);
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .tagline-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 999px;
+      background: var(--accent);
+      box-shadow: 0 0 10px rgba(56, 189, 248, 0.85);
+    }
+
+    h2 {
+      margin: 0 0 10px;
+      font-size: 1.08rem;
+      letter-spacing: 0.02em;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 6px;
+    }
+
+    h2 span.label {
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.14em;
+      color: var(--text-muted);
+    }
+
+    main {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .card {
+      background: radial-gradient(circle at top right,
+          rgba(56, 189, 248, 0.06) 0,
+          rgba(15, 23, 42, 0.98) 40%,
+          #020617 100%);
+      border-radius: var(--radius-lg);
+      border: var(--border-subtle);
+      padding: 14px 16px 16px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .card::before {
+      content: "";
+      position: absolute;
+      inset: -120px;
+      background-image: radial-gradient(circle at 0 -40px,
+        rgba(56, 189, 248, 0.12),
+        transparent 60%);
+      opacity: 0.7;
+      pointer-events: none;
+    }
+
+    .card-inner {
+      position: relative;
+      z-index: 1;
+    }
+
+    .row-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1.25fr) minmax(0, 1.1fr);
+      gap: 16px;
+    }
+
+    @media (max-width: 1000px) {
+      .row-grid {
+        grid-template-columns: minmax(0, 1fr);
+      }
+    }
+
+    .grid-2col {
+      display: grid;
+      grid-template-columns: minmax(0, 1.2fr) minmax(0, 1.2fr);
+      gap: 12px;
+    }
+
+    @media (max-width: 900px) {
+      .grid-2col {
+        grid-template-columns: minmax(0, 1fr);
+      }
+    }
+
+    .hint {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      margin-bottom: 6px;
+    }
+
+    .inputs-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 8px 12px;
+      margin-bottom: 6px;
+    }
+
+    @media (max-width: 650px) {
+      .inputs-grid {
+        grid-template-columns: minmax(0, 1fr);
+      }
+    }
+
+    .input-group {
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+      font-size: 0.82rem;
+    }
+
+    .input-label {
+      font-size: 0.78rem;
+      text-transform: uppercase;
+      letter-spacing: 0.14em;
+      color: var(--text-muted);
+    }
+
+    .input-sub {
+      font-size: 0.72rem;
+      color: var(--text-muted);
+    }
+
+    input[type="number"], input[type="text"], select {
+      width: 100%;
+      padding: 4px 6px;
+      border-radius: 0.5rem;
+      border: 1px solid rgba(148, 163, 184, 0.6);
+      background: rgba(15, 23, 42, 0.98);
+      color: var(--text);
+      font-size: 0.83rem;
+    }
+
+    input[type="number"]:focus, input[type="text"]:focus, select:focus {
+      outline: none;
+      border-color: rgba(56, 189, 248, 0.9);
+      box-shadow: 0 0 0 1px rgba(56, 189, 248, 0.4);
+    }
+
+    input[type="range"] {
+      width: 100%;
+    }
+
+    button {
+      font-size: 0.8rem;
+      text-transform: uppercase;
+      letter-spacing: 0.14em;
+      border-radius: 999px;
+      padding: 5px 12px;
+      border: 1px solid rgba(56, 189, 248, 0.9);
+      background: radial-gradient(circle at top left,
+          rgba(56, 189, 248, 0.3),
+          rgba(15, 23, 42, 0.98));
+      color: var(--accent-strong);
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    button:disabled {
+      opacity: 0.4;
+      cursor: default;
+    }
+
+    button:hover:not(:disabled) {
+      box-shadow: 0 0 0 1px rgba(56, 189, 248, 0.6);
+      transform: translateY(-0.5px);
+    }
+
+    .button-ghost {
+      border-color: rgba(148, 163, 184, 0.7);
+      background: rgba(15, 23, 42, 0.96);
+      color: var(--text-muted);
+    }
+
+    .button-ghost:hover {
+      border-color: rgba(148, 163, 184, 1);
+    }
+
+    .results-card {
+      border-radius: 1rem;
+      border: 1px solid rgba(148, 163, 184, 0.5);
+      background: rgba(15, 23, 42, 0.98);
+      padding: 8px 10px 10px;
+      font-size: 0.83rem;
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 6px 10px;
+    }
+
+    @media (max-width: 600px) {
+      .results-card {
+        grid-template-columns: minmax(0, 1fr);
+      }
+    }
+
+    .result-row {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .result-label {
+      font-size: 0.78rem;
+      text-transform: uppercase;
+      letter-spacing: 0.14em;
+      color: var(--text-muted);
+    }
+
+    .result-value {
+      font-family: "SF Mono", ui-monospace, Menlo, Monaco, Consolas,
+                   "Liberation Mono", "Courier New", monospace;
+      font-size: 0.88rem;
+    }
+
+    .result-note {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+    }
+
+    .result-highlight { color: var(--accent-strong); }
+    .result-bad { color: #fecaca; }
+
+    .big-number {
+      font-size: 1.1rem;
+      font-family: "SF Mono", ui-monospace, Menlo, Monaco, Consolas,
+                   "Liberation Mono", "Courier New", monospace;
+    }
+
+    .big-number.good { color: var(--success); }
+    .big-number.bad { color: var(--danger); }
+
+    .pill-soft {
+      font-size: 0.72rem;
+      padding: 2px 7px;
+      border-radius: 999px;
+      border: 1px solid rgba(148, 163, 184, 0.55);
+      background: rgba(15, 23, 42, 0.95);
+      color: var(--text-muted);
+    }
+
+    svg {
+      display: block;
+    }
+
+    footer {
+      margin-top: 8px;
+      font-size: 0.72rem;
+      color: var(--text-muted);
+      display: flex;
+      justify-content: space-between;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+  </style>
+</head>
+<body>
+<div class="app-shell">
+  <header>
+    <div class="title-block">
+      <h1>
+        Survival &amp; Correlation Playground
+        <span class="title-pill">Kaplan–Meier · Hazard ratios · Correlation ≠ causation</span>
+      </h1>
+      <div class="subtitle">
+        Two extra toys for your EBM teaching: a mini survival-trial simulator with Kaplan–Meier curves
+        and hazard ratios, plus a correlation sandbox that shows how a common cause can create
+        strong correlation without direct causation.
+      </div>
+    </div>
+    <div class="tagline">
+      <span class="tagline-dot"></span>
+      Advanced EBM visual demo
+    </div>
+  </header>
+
+  <main>
+    <!-- 1. Survival curves & hazard ratio -->
+    <section class="card">
+      <div class="card-inner">
+        <h2>
+          Survival Curves &amp; Hazard Ratios
+          <span class="label">Mini RCT survival simulator</span>
+        </h2>
+        <div class="hint">
+          We simulate an exponential-time randomized trial with two arms (control vs treatment).
+          Choose a hazard ratio, sample size, censoring and follow-up. The app draws Kaplan–Meier
+          curves, estimates the hazard ratio from the simulated data, and shows how censoring
+          and sample size affect results.
+        </div>
+
+        <div class="row-grid">
+          <div>
+            <div class="inputs-grid">
+              <div class="input-group">
+                <div class="input-label">True hazard ratio (treatment vs control)</div>
+                <input type="range" id="hrSlider" min="40" max="200" value="70" />
+                <div class="input-sub">
+                  HR &lt; 1 = treatment benefit. Current:
+                  <span id="hrDisplay" class="big-number good"></span>
+                </div>
+              </div>
+              <div class="input-group">
+                <div class="input-label">Sample size per arm</div>
+                <input type="number" id="nPerArmInput" value="150" min="20" step="10" />
+                <div class="input-sub">Total N = 2 × this value.</div>
+              </div>
+              <div class="input-group">
+                <div class="input-label">% censored (approximately)</div>
+                <input type="range" id="censorSlider" min="0" max="70" value="30" />
+                <div class="input-sub">
+                  Lost / incomplete follow-up. Current:
+                  <span id="censorDisplay" class="big-number"></span>
+                </div>
+              </div>
+              <div class="input-group">
+                <div class="input-label">Max follow-up (years)</div>
+                <input type="range" id="followupSlider" min="1" max="7" value="4" />
+                <div class="input-sub">
+                  Calendar time window. Current:
+                  <span id="followupDisplay" class="big-number"></span>
+                </div>
+              </div>
+              <div class="input-group">
+                <div class="input-label">Baseline hazard (control arm)</div>
+                <input type="range" id="hazardSlider" min="5" max="40" value="18" />
+                <div class="input-sub">
+                  Approx events per 100 patient-years in control. Current:
+                  <span id="hazardDisplay" class="big-number"></span>
+                </div>
+              </div>
+            </div>
+
+            <button id="survSimBtn">▶ Simulate survival trial</button>
+            <div class="hint" style="margin-top:6px;">
+              Teaching trick: run the same parameters a few times to show sampling variability.
+              Then increase N and see the hazard ratio estimate stabilise and the curves smooth out.
+            </div>
+          </div>
+
+          <div>
+            <div class="results-card" id="survStatsPanel">
+              <!-- filled by JS -->
+            </div>
+
+            <svg id="kmSvg" viewBox="0 0 360 260" style="width:100%; height:auto; margin-top:8px;">
+              <!-- filled by JS -->
+            </svg>
+            <div class="hint" style="margin-top:4px;">
+              Kaplan–Meier curves step down at events; vertical tick marks (if visible) indicate censoring.
+              Under proportional hazards, the curves separate but are roughly “parallel” on the log scale.
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 2. Correlation ≠ causation -->
+    <section class="card">
+      <div class="card-inner">
+        <h2>
+          Correlation ≠ Causation Sandbox
+          <span class="label">Common cause vs direct effect</span>
+        </h2>
+        <div class="hint">
+          We generate two variables X and Y from a hidden common cause U. You can optionally
+          add a direct effect of X → Y. Both scenarios can show strong correlations, but only
+          one has a genuine causal arrow from X to Y.
+        </div>
+
+        <div class="grid-2col">
+          <div>
+            <div class="inputs-grid">
+              <div class="input-group">
+                <div class="input-label">Sample size (points)</div>
+                <input type="number" id="corrNInput" value="300" min="30" step="10" />
+              </div>
+              <div class="input-group">
+                <div class="input-label">Strength of common cause (U → X,Y)</div>
+                <input type="range" id="commonSlider" min="20" max="150" value="90" />
+                <div class="input-sub">
+                  Larger values → X and Y depend more on U. Current:
+                  <span id="commonDisplay" class="big-number"></span>
+                </div>
+              </div>
+              <div class="input-group">
+                <div class="input-label">Noise level</div>
+                <input type="range" id="noiseSlider" min="10" max="150" value="60" />
+                <div class="input-sub">
+                  Random noise added to X and Y. Current:
+                  <span id="noiseDisplay" class="big-number"></span>
+                </div>
+              </div>
+              <div class="input-group">
+                <div class="input-label">Direct causal effect X → Y</div>
+                <input type="range" id="directSlider" min="0" max="150" value="70" />
+                <div class="input-sub">
+                  0 = no direct causal effect (only common cause). Current:
+                  <span id="directDisplay" class="big-number"></span>
+                </div>
+              </div>
+            </div>
+
+            <button id="corrSimBtn">▶ Simulate X, Y</button>
+            <div class="hint" style="margin-top:6px;">
+              Teaching trick: first set “Direct causal effect” to 0 and show a strong correlation.
+              Ask: “Is this causal?” Then increase the direct effect and explain the difference
+              between explanation via U vs genuine X → Y.
+            </div>
+
+            <div class="results-card" id="corrStatsPanel" style="margin-top:6px;">
+              <!-- filled by JS -->
+            </div>
+          </div>
+
+          <div>
+            <svg id="corrSvg" viewBox="0 0 360 260" style="width:100%; height:auto;">
+              <!-- filled by JS -->
+            </svg>
+            <div class="hint" style="margin-top:4px;">
+              Left–right slope and tightness of the cloud reflect correlation and regression slope.
+              But causation depends on the data-generating structure (common cause vs direct effect),
+              not just on the scatter plot.
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <div>
+      You can drop this file next to the other playgrounds and alt-tab between them during your talk.
+    </div>
+    <div>
+      Save as <code>survival_correlation_playground.html</code> and open offline in a modern browser.
+    </div>
+  </footer>
+</div>
+
+<script>
+  // ---------- Utility functions ----------
+
+  function safeNumber(v) {
+    const n = Number(v);
+    return Number.isFinite(n) ? n : 0;
+  }
+
+  function randUniform() {
+    return Math.random();
+  }
+
+  function randExponential(rate) {
+    // rate > 0
+    const u = Math.random();
+    return -Math.log(1 - u) / rate;
+  }
+
+  function randNormal() {
+    // Box–Muller
+    let u = 0, v = 0;
+    while (u === 0) u = Math.random();
+    while (v === 0) v = Math.random();
+    return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v);
+  }
+
+  function erf(x) {
+    const sign = x < 0 ? -1 : 1;
+    const a1 = 0.254829592;
+    const a2 = -0.284496736;
+    const a3 = 1.421413741;
+    const a4 = -1.453152027;
+    const a5 = 1.061405429;
+    const p = 0.3275911;
+    const absx = Math.abs(x);
+    const t = 1 / (1 + p * absx);
+    const y =
+      1 -
+      (((((a5 * t + a4) * t) + a3) * t + a2) * t + a1) *
+      t *
+      Math.exp(-absx * absx);
+    return sign * y;
+  }
+
+  function normalCDF(x) {
+    return 0.5 * (1 + erf(x / Math.SQRT2));
+  }
+
+  function formatPercent(p, d = 1) {
+    if (!Number.isFinite(p)) return "—";
+    return (p * 100).toFixed(d) + "%";
+  }
+
+  function formatNumber(x, d = 2) {
+    if (!Number.isFinite(x)) return "—";
+    return x.toFixed(d);
+  }
+
+  function formatRatio(x, d = 2) {
+    if (!Number.isFinite(x) || x <= 0) return "—";
+    return x.toFixed(d);
+  }
+
+  // ---------- Survival simulator ----------
+
+  let survData = []; // {time, event, group, censored}
+
+  function simulateSurvival() {
+    const hrSlider = document.getElementById("hrSlider");
+    const nInput = document.getElementById("nPerArmInput");
+    const censorSlider = document.getElementById("censorSlider");
+    const followSlider = document.getElementById("followupSlider");
+    const hazSlider = document.getElementById("hazardSlider");
+
+    const hr = safeNumber(hrSlider.value) / 100;        // 0.4–2.0
+    const nPerArm = Math.max(10, Math.floor(safeNumber(nInput.value)));
+    const censorPct = safeNumber(censorSlider.value);   // 0–70
+    const followUp = safeNumber(followSlider.value);    // years
+    const hazPer100py = safeNumber(hazSlider.value);    // ~events / 100 pt-yrs
+    const rateControl = hazPer100py / 100;              // hazard per year
+    const rateTreat = rateControl * hr;
+
+    document.getElementById("hrDisplay").textContent = hr.toFixed(2);
+    document.getElementById("censorDisplay").textContent = censorPct.toFixed(0) + "%";
+    document.getElementById("followupDisplay").textContent = followUp.toFixed(1) + " y";
+    document.getElementById("hazardDisplay").textContent = hazPer100py.toFixed(0) + " /100py";
+
+    survData = [];
+
+    const censorProb = censorPct / 100;
+
+    function simulateArm(group, rate, n) {
+      for (let i = 0; i < n; i++) {
+        const trueEvent = randExponential(rate);
+        let censorTime = followUp;
+        if (Math.random() < censorProb) {
+          censorTime = randUniform() * followUp;
+        }
+        const obsTime = Math.min(trueEvent, censorTime, followUp);
+        const isEvent = trueEvent <= obsTime && trueEvent <= followUp;
+        survData.push({
+          group,      // 0 = control, 1 = treatment
+          time: obsTime,
+          event: isEvent ? 1 : 0,
+          censored: isEvent ? 0 : 1
+        });
+      }
+    }
+
+    simulateArm(0, rateControl, nPerArm);
+    simulateArm(1, rateTreat, nPerArm);
+
+    renderSurvivalSummary({
+      hrTrue: hr,
+      followUp,
+      rateControl,
+      rateTreat,
+      nPerArm
+    });
+  }
+
+  function computeKM(group, maxTime) {
+    const subjects = survData.filter(s => s.group === group);
+    if (!subjects.length) {
+      return [{ t: 0, S: 1 }];
+    }
+
+    const eventsTimes = Array.from(
+      new Set(
+        subjects
+          .filter(s => s.event === 1)
+          .map(s => s.time)
+      )
+    ).sort((a, b) => a - b);
+
+    let S = 1.0;
+    const steps = [{ t: 0, S }];
+
+    eventsTimes.forEach(t => {
+      const nRisk = subjects.filter(s => s.time >= t).length;
+      const d = subjects.filter(s => s.event === 1 && s.time === t).length;
+      if (nRisk > 0) {
+        S = S * (1 - d / nRisk);
+      }
+      steps.push({ t, S });
+    });
+
+    if (steps[steps.length - 1].t < maxTime) {
+      steps.push({ t: maxTime, S });
+    }
+    return steps;
+  }
+
+  function medianFromKM(steps) {
+    let last = { t: 0, S: 1 };
+    for (const s of steps) {
+      if (s.S <= 0.5) {
+        // approximate by linear in time between last and current S
+        const dS = last.S - s.S;
+        if (dS <= 0) return s.t;
+        const frac = (last.S - 0.5) / dS;
+        return last.t + frac * (s.t - last.t);
+      }
+      last = s;
+    }
+    return NaN;
+  }
+
+  function renderSurvivalSummary(params) {
+    const { hrTrue, followUp, rateControl, rateTreat, nPerArm } = params;
+    const statsPanel = document.getElementById("survStatsPanel");
+    const kmSvg = document.getElementById("kmSvg");
+
+    if (!survData.length) {
+      statsPanel.innerHTML = `
+        <div class="result-row">
+          <div class="result-label">Survival trial</div>
+          <div class="result-note">Click “Simulate” to generate data.</div>
+        </div>`;
+      kmSvg.innerHTML = "";
+      return;
+    }
+
+    const ctrl = survData.filter(s => s.group === 0);
+    const trt = survData.filter(s => s.group === 1);
+
+    const eventsCtrl = ctrl.filter(s => s.event === 1).length;
+    const eventsTrt = trt.filter(s => s.event === 1).length;
+    const censCtrl = ctrl.length - eventsCtrl;
+    const censTrt = trt.length - eventsTrt;
+
+    const timeCtrl = ctrl.reduce((acc, s) => acc + s.time, 0);
+    const timeTrt = trt.reduce((acc, s) => acc + s.time, 0);
+
+    const rateObsCtrl = eventsCtrl / timeCtrl;
+    const rateObsTrt = eventsTrt / timeTrt;
+    const hrObs = rateObsTrt / rateObsCtrl;
+
+    const logHR = Math.log(hrObs);
+    const seLogHR = Math.sqrt(1 / Math.max(eventsCtrl, 1) + 1 / Math.max(eventsTrt, 1));
+    const z = logHR / seLogHR;
+    const p = 2 * (1 - normalCDF(Math.abs(z)));
+
+    const kmCtrl = computeKM(0, followUp);
+    const kmTrt = computeKM(1, followUp);
+    const medCtrl = medianFromKM(kmCtrl);
+    const medTrt = medianFromKM(kmTrt);
+
+    statsPanel.innerHTML = `
+      <div class="result-row">
+        <div class="result-label">Trial setup</div>
+        <div class="result-value">
+          N = ${nPerArm} per arm · true HR = ${formatRatio(hrTrue)}
+        </div>
+        <div class="result-note">
+          Control hazard ≈ ${formatNumber(rateControl * 100, 1)} events /100 pt-years; treatment hazard = HR × control.
+        </div>
+      </div>
+      <div class="result-row">
+        <div class="result-label">Observed events &amp; follow-up</div>
+        <div class="result-value">
+          Control: ${eventsCtrl} events, ${censCtrl} censored<br/>
+          Treatment: ${eventsTrt} events, ${censTrt} censored
+        </div>
+        <div class="result-note">
+          Total follow-up: control ${formatNumber(timeCtrl, 1)} pt-years · treatment ${formatNumber(timeTrt, 1)} pt-years.
+        </div>
+      </div>
+      <div class="result-row">
+        <div class="result-label">Estimated hazard ratio</div>
+        <div class="result-value result-highlight">
+          HR<sub>obs</sub> ≈ ${formatRatio(hrObs)} (log-rate ratio)<br/>
+          z ≈ ${formatNumber(z, 2)}, p ≈ ${p < 0.0001 ? "&lt;0.0001" : formatNumber(p, 4)}
+        </div>
+        <div class="result-note">
+          Estimated from event rates per person-time (rough approximation to a Cox/log-rank analysis).
+        </div>
+      </div>
+      <div class="result-row">
+        <div class="result-label">Median survival (KM)</div>
+        <div class="result-value">
+          Control: ${Number.isFinite(medCtrl) ? formatNumber(medCtrl, 2) + " y" : "not reached"}<br/>
+          Treatment: ${Number.isFinite(medTrt) ? formatNumber(medTrt, 2) + " y" : "not reached"}
+        </div>
+        <div class="result-note">
+          Heavily right-censored curves may not reach 50% events, so median is “not reached”.
+        </div>
+      </div>
+    `;
+
+    renderKMPlot(kmCtrl, kmTrt, followUp);
+  }
+
+  function renderKMPlot(kmCtrl, kmTrt, followUp) {
+    const svg = document.getElementById("kmSvg");
+    svg.innerHTML = "";
+
+    const width = 360;
+    const height = 260;
+    const marginLeft = 45;
+    const marginRight = 18;
+    const marginTop = 18;
+    const marginBottom = 32;
+    const innerW = width - marginLeft - marginRight;
+    const innerH = height - marginTop - marginBottom;
+
+    const maxTime = followUp;
+    const xScale = t => marginLeft + (t / maxTime) * innerW;
+    const yScale = S => marginTop + (1 - S) * innerH;
+
+    // Axes
+    const xAxis = document.createElementNS("http://www.w3.org/2000/svg", "line");
+    xAxis.setAttribute("x1", marginLeft);
+    xAxis.setAttribute("x2", marginLeft + innerW);
+    xAxis.setAttribute("y1", marginTop + innerH);
+    xAxis.setAttribute("y2", marginTop + innerH);
+    xAxis.setAttribute("stroke", "#4b5563");
+    xAxis.setAttribute("stroke-width", "1");
+    svg.appendChild(xAxis);
+
+    const yAxis = document.createElementNS("http://www.w3.org/2000/svg", "line");
+    yAxis.setAttribute("x1", marginLeft);
+    yAxis.setAttribute("x2", marginLeft);
+    yAxis.setAttribute("y1", marginTop);
+    yAxis.setAttribute("y2", marginTop + innerH);
+    yAxis.setAttribute("stroke", "#4b5563");
+    yAxis.setAttribute("stroke-width", "1");
+    svg.appendChild(yAxis);
+
+    // X ticks (time)
+    const ticksTime = 4;
+    for (let i = 0; i <= ticksTime; i++) {
+      const t = (maxTime * i) / ticksTime;
+      const x = xScale(t);
+      const tick = document.createElementNS("http://www.w3.org/2000/svg", "line");
+      tick.setAttribute("x1", x);
+      tick.setAttribute("x2", x);
+      tick.setAttribute("y1", marginTop + innerH);
+      tick.setAttribute("y2", marginTop + innerH + 4);
+      tick.setAttribute("stroke", "#6b7280");
+      tick.setAttribute("stroke-width", "1");
+      svg.appendChild(tick);
+
+      const label = document.createElementNS("http://www.w3.org/2000/svg", "text");
+      label.setAttribute("x", x);
+      label.setAttribute("y", height - 4);
+      label.setAttribute("fill", "#9ca3af");
+      label.setAttribute("font-size", "8");
+      label.setAttribute("text-anchor", "middle");
+      label.textContent = t.toFixed(1);
+      svg.appendChild(label);
+    }
+
+    const xLab = document.createElementNS("http://www.w3.org/2000/svg", "text");
+    xLab.setAttribute("x", marginLeft + innerW / 2);
+    xLab.setAttribute("y", height - 2);
+    xLab.setAttribute("fill", "#9ca3af");
+    xLab.setAttribute("font-size", "9");
+    xLab.setAttribute("text-anchor", "middle");
+    xLab.textContent = "Time (years)";
+    svg.appendChild(xLab);
+
+    // Y ticks (survival)
+    const ticksS = [0, 0.25, 0.5, 0.75, 1];
+    ticksS.forEach(S => {
+      const y = yScale(S);
+      const tick = document.createElementNS("http://www.w3.org/2000/svg", "line");
+      tick.setAttribute("x1", marginLeft);
+      tick.setAttribute("x2", marginLeft - 4);
+      tick.setAttribute("y1", y);
+      tick.setAttribute("y2", y);
+      tick.setAttribute("stroke", "#6b7280");
+      tick.setAttribute("stroke-width", "1");
+      svg.appendChild(tick);
+
+      const label = document.createElementNS("http://www.w3.org/2000/svg", "text");
+      label.setAttribute("x", marginLeft - 6);
+      label.setAttribute("y", y + 3);
+      label.setAttribute("fill", "#9ca3af");
+      label.setAttribute("font-size", "8");
+      label.setAttribute("text-anchor", "end");
+      label.textContent = S.toFixed(2);
+      svg.appendChild(label);
+    });
+
+    const yLab = document.createElementNS("http://www.w3.org/2000/svg", "text");
+    yLab.setAttribute("x", marginLeft - 30);
+    yLab.setAttribute("y", marginTop + innerH / 2);
+    yLab.setAttribute("fill", "#9ca3af");
+    yLab.setAttribute("font-size", "9");
+    yLab.setAttribute("text-anchor", "middle");
+    yLab.setAttribute("transform", `rotate(-90 ${marginLeft - 30} ${marginTop + innerH / 2})`);
+    yLab.textContent = "Survival probability";
+    svg.appendChild(yLab);
+
+    function kmPath(steps) {
+      if (!steps.length) return "";
+      let d = "";
+      let prev = { t: steps[0].t, S: steps[0].S };
+      d += `M ${xScale(prev.t).toFixed(2)} ${yScale(prev.S).toFixed(2)}`;
+      for (let i = 1; i < steps.length; i++) {
+        const s = steps[i];
+        // horizontal to new time
+        d += ` L ${xScale(s.t).toFixed(2)} ${yScale(prev.S).toFixed(2)}`;
+        // vertical drop
+        d += ` L ${xScale(s.t).toFixed(2)} ${yScale(s.S).toFixed(2)}`;
+        prev = s;
+      }
+      return d;
+    }
+
+    const pathCtrl = document.createElementNS("http://www.w3.org/2000/svg", "path");
+    pathCtrl.setAttribute("d", kmPath(kmCtrl));
+    pathCtrl.setAttribute("fill", "none");
+    pathCtrl.setAttribute("stroke", "#f97373");
+    pathCtrl.setAttribute("stroke-width", "1.6");
+    svg.appendChild(pathCtrl);
+
+    const pathTrt = document.createElementNS("http://www.w3.org/2000/svg", "path");
+    pathTrt.setAttribute("d", kmPath(kmTrt));
+    pathTrt.setAttribute("fill", "none");
+    pathTrt.setAttribute("stroke", "#38bdf8");
+    pathTrt.setAttribute("stroke-width", "1.8");
+    svg.appendChild(pathTrt);
+
+    // Legend
+    const legendY = marginTop + 10;
+    const legendX = marginLeft + innerW - 100;
+
+    function legendEntry(x, y, color, label) {
+      const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
+      line.setAttribute("x1", x);
+      line.setAttribute("x2", x + 14);
+      line.setAttribute("y1", y);
+      line.setAttribute("y2", y);
+      line.setAttribute("stroke", color);
+      line.setAttribute("stroke-width", "2");
+      svg.appendChild(line);
+
+      const txt = document.createElementNS("http://www.w3.org/2000/svg", "text");
+      txt.setAttribute("x", x + 18);
+      txt.setAttribute("y", y + 3);
+      txt.setAttribute("fill", "#e5e7eb");
+      txt.setAttribute("font-size", "9");
+      txt.textContent = label;
+      svg.appendChild(txt);
+    }
+
+    legendEntry(legendX, legendY, "#f97373", "Control");
+    legendEntry(legendX, legendY + 12, "#38bdf8", "Treatment");
+  }
+
+  // ---------- Correlation sandbox ----------
+
+  let corrData = []; // {x, y}
+
+  function simulateCorrelation() {
+    const nInput = document.getElementById("corrNInput");
+    const commonSlider = document.getElementById("commonSlider");
+    const noiseSlider = document.getElementById("noiseSlider");
+    const directSlider = document.getElementById("directSlider");
+
+    const n = Math.max(10, Math.floor(safeNumber(nInput.value)));
+    const commonStrength = safeNumber(commonSlider.value) / 100;  // 0.2–1.5
+    const noiseLevel = safeNumber(noiseSlider.value) / 100;        // 0.1–1.5
+    const directEffect = safeNumber(directSlider.value) / 100;     // 0–1.5
+
+    document.getElementById("commonDisplay").textContent = commonStrength.toFixed(2);
+    document.getElementById("noiseDisplay").textContent = noiseLevel.toFixed(2);
+    document.getElementById("directDisplay").textContent = directEffect.toFixed(2);
+
+    corrData = [];
+    for (let i = 0; i < n; i++) {
+      const U = randNormal();
+      const epsX = randNormal() * noiseLevel;
+      const epsY = randNormal() * noiseLevel;
+      const x = commonStrength * U + epsX;
+      // y gets common cause + optional direct effect of x
+      const y = commonStrength * U + directEffect * x + epsY;
+      corrData.push({ x, y });
+    }
+
+    renderCorrelationSummary({
+      n,
+      commonStrength,
+      noiseLevel,
+      directEffect
+    });
+  }
+
+  function pearsonCorrelation(data) {
+    const n = data.length;
+    if (n < 2) return NaN;
+    let sumX = 0, sumY = 0, sumXX = 0, sumYY = 0, sumXY = 0;
+    data.forEach(p => {
+      sumX += p.x;
+      sumY += p.y;
+      sumXX += p.x * p.x;
+      sumYY += p.y * p.y;
+      sumXY += p.x * p.y;
+    });
+    const meanX = sumX / n;
+    const meanY = sumY / n;
+    const varX = sumXX / n - meanX * meanX;
+    const varY = sumYY / n - meanY * meanY;
+    const cov = sumXY / n - meanX * meanX - (sumXY / n - meanX * meanY); // oops; fix
+  }
+
+  // I messed that covariance line, let's fix with a clean function:
+  function pearsonFromSums(data) {
+    const n = data.length;
+    if (n < 2) return { r: NaN, slope: NaN };
+    let sumX = 0, sumY = 0, sumXX = 0, sumYY = 0, sumXY = 0;
+    data.forEach(p => {
+      sumX += p.x;
+      sumY += p.y;
+      sumXX += p.x * p.x;
+      sumYY += p.y * p.y;
+      sumXY += p.x * p.y;
+    });
+    const meanX = sumX / n;
+    const meanY = sumY / n;
+    const sxx = sumXX - n * meanX * meanX;
+    const syy = sumYY - n * meanY * meanY;
+    const sxy = sumXY - n * meanX * meanY;
+    if (sxx <= 0 || syy <= 0) {
+      return { r: NaN, slope: NaN };
+    }
+    const r = sxy / Math.sqrt(sxx * syy);
+    const slope = sxy / sxx; // regression of Y on X
+    return { r, slope };
+  }
+
+  function renderCorrelationSummary(params) {
+    const { n, commonStrength, noiseLevel, directEffect } = params;
+    const statsPanel = document.getElementById("corrStatsPanel");
+    const corrSvg = document.getElementById("corrSvg");
+
+    if (!corrData.length) {
+      statsPanel.innerHTML = `
+        <div class="result-row">
+          <div class="result-label">Correlation</div>
+          <div class="result-note">Click “Simulate” to generate points.</div>
+        </div>`;
+      corrSvg.innerHTML = "";
+      return;
+    }
+
+    const { r, slope } = pearsonFromSums(corrData);
+    const r2 = r * r;
+
+    statsPanel.innerHTML = `
+      <div class="result-row">
+        <div class="result-label">Data-generating structure</div>
+        <div class="result-value">
+          X = ${formatNumber(commonStrength, 2)}·U + noise<br/>
+          Y = ${formatNumber(commonStrength, 2)}·U + ${formatNumber(directEffect, 2)}·X + noise
+        </div>
+        <div class="result-note">
+          When the X coefficient is 0, all correlation is due to the hidden U (common cause).
+        </div>
+      </div>
+      <div class="result-row">
+        <div class="result-label">Observed correlation</div>
+        <div class="result-value result-highlight">
+          r = ${formatNumber(r, 3)}, R² = ${formatNumber(r2, 3)}<br/>
+          Regression slope (Y on X) ≈ ${formatNumber(slope, 3)}
+        </div>
+        <div class="result-note">
+          A strong r does not tell you whether X causes Y, U causes both, or a mixture.
+        </div>
+      </div>
+      <div class="result-row">
+        <div class="result-label">Sample size</div>
+        <div class="result-value">
+          n = ${n} points
+        </div>
+        <div class="result-note">
+          With large n, even tiny non-causal correlations can be highly “statistically significant”.
+        </div>
+      </div>
+    `;
+
+    renderScatter(corrData);
+  }
+
+  function renderScatter(data) {
+    const svg = document.getElementById("corrSvg");
+    svg.innerHTML = "";
+
+    const width = 360;
+    const height = 260;
+    const marginLeft = 40;
+    const marginRight = 18;
+    const marginTop = 18;
+    const marginBottom = 32;
+    const innerW = width - marginLeft - marginRight;
+    const innerH = height - marginTop - marginBottom;
+
+    const n = data.length;
+    if (!n) return;
+
+    let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
+    data.forEach(p => {
+      if (p.x < minX) minX = p.x;
+      if (p.x > maxX) maxX = p.x;
+      if (p.y < minY) minY = p.y;
+      if (p.y > maxY) maxY = p.y;
+    });
+    const padX = 0.1 * (maxX - minX || 1);
+    const padY = 0.1 * (maxY - minY || 1);
+    minX -= padX; maxX += padX;
+    minY -= padY; maxY += padY;
+
+    const xScale = x => marginLeft + ((x - minX) / (maxX - minX)) * innerW;
+    const yScale = y => marginTop + (1 - (y - minY) / (maxY - minY)) * innerH;
+
+    // Axes
+    const xAxis = document.createElementNS("http://www.w3.org/2000/svg", "line");
+    xAxis.setAttribute("x1", marginLeft);
+    xAxis.setAttribute("x2", marginLeft + innerW);
+    xAxis.setAttribute("y1", marginTop + innerH);
+    xAxis.setAttribute("y2", marginTop + innerH);
+    xAxis.setAttribute("stroke", "#4b5563");
+    xAxis.setAttribute("stroke-width", "1");
+    svg.appendChild(xAxis);
+
+    const yAxis = document.createElementNS("http://www.w3.org/2000/svg", "line");
+    yAxis.setAttribute("x1", marginLeft);
+    yAxis.setAttribute("x2", marginLeft);
+    yAxis.setAttribute("y1", marginTop);
+    yAxis.setAttribute("y2", marginTop + innerH);
+    yAxis.setAttribute("stroke", "#4b5563");
+    yAxis.setAttribute("stroke-width", "1");
+    svg.appendChild(yAxis);
+
+    const xLab = document.createElementNS("http://www.w3.org/2000/svg", "text");
+    xLab.setAttribute("x", marginLeft + innerW / 2);
+    xLab.setAttribute("y", height - 2);
+    xLab.setAttribute("fill", "#9ca3af");
+    xLab.setAttribute("font-size", "9");
+    xLab.setAttribute("text-anchor", "middle");
+    xLab.textContent = "X";
+    svg.appendChild(xLab);
+
+    const yLab = document.createElementNS("http://www.w3.org/2000/svg", "text");
+    yLab.setAttribute("x", marginLeft - 26);
+    yLab.setAttribute("y", marginTop + innerH / 2);
+    yLab.setAttribute("fill", "#9ca3af");
+    yLab.setAttribute("font-size", "9");
+    yLab.setAttribute("text-anchor", "middle");
+    yLab.setAttribute("transform", `rotate(-90 ${marginLeft - 26} ${marginTop + innerH / 2})`);
+    yLab.textContent = "Y";
+    svg.appendChild(yLab);
+
+    // Points
+    data.forEach(p => {
+      const cx = xScale(p.x);
+      const cy = yScale(p.y);
+      const circle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+      circle.setAttribute("cx", cx);
+      circle.setAttribute("cy", cy);
+      circle.setAttribute("r", 2.5);
+      circle.setAttribute("fill", "#38bdf8");
+      circle.setAttribute("stroke", "#0ea5e9");
+      circle.setAttribute("stroke-width", "0.6");
+      svg.appendChild(circle);
+    });
+  }
+
+  // ---------- Init ----------
+
+  document.addEventListener("DOMContentLoaded", () => {
+    // Survival events
+    document.getElementById("survSimBtn").addEventListener("click", simulateSurvival);
+    ["hrSlider", "censorSlider", "followupSlider", "hazardSlider", "nPerArmInput"].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.addEventListener("input", simulateSurvival);
+    });
+
+    // Correlation events
+    document.getElementById("corrSimBtn").addEventListener("click", simulateCorrelation);
+    ["corrNInput", "commonSlider", "noiseSlider", "directSlider"].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.addEventListener("input", simulateCorrelation);
+    });
+
+    // Initial simulations
+    simulateSurvival();
+    simulateCorrelation();
+  });
+</script>
+</body>
+</html>
