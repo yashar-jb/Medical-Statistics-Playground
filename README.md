@@ -235,5 +235,5 @@ Two advanced topics combined:
 
 ***OR***
 **You can open GitHub Pages for this repo from here:**
-  - https://yashar-jb.github.io/Medical-Statistics-Playground/
+  - https://yashar-jb.github.io/Medical-Statistics-Playground/index.html
 
